@@ -21,6 +21,20 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <name>DBeaver Corp</name>
+            <organization>DBeaver Corp</organization>
+            <organizationUrl>https://github.com/dbeaver</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</connection>
+        <developerConnection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</developerConnection>
+        <url>git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</url>
+    </scm>
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -41,6 +55,7 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/dist</outputDirectory>
                             <includeScope>runtime</includeScope>
+                            <stripClassifier>com.dbeaver.jdbc.driver.d1</stripClassifier>
                         </configuration>
                     </execution>
                 </executions>
@@ -73,6 +88,12 @@
                     <execution>
                         <id>build-full-jar</id>
                         <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>junit:junit</exclude>
+                                    <exclude>jmock:jmock</exclude>
+                                </excludes>
+                            </artifactSet>
                             <finalName>dbeaver-jdbc-cloudflare-d1-full-${project.version}</finalName>
                         </configuration>
                         <phase>package</phase>
