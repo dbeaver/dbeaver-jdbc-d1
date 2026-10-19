@@ -30,14 +30,24 @@ List<D1Database> databases = D1Driver.discoverDatabases(properties);
 
 ## Development
 
-Run hermetic unit tests:
+Run the aggregate build and hermetic unit tests:
 
 ```sh
-mvn test
+../dbeaver-common/mvnw -f aggregate/pom.xml package
 ```
 
 Live Cloudflare tests are tagged `integration` and are excluded by default. Set `D1_JDBC_ACCOUNT_ID`, `D1_JDBC_DATABASE_ID`, and `D1_JDBC_API_TOKEN`, then run:
 
 ```sh
-mvn test -Dtest.groups=integration -Dexcluded.test.groups=
+../dbeaver-common/mvnw -f aggregate/pom.xml test -Pd1-integration-tests
+```
+
+## Download
+
+```xml
+<dependency>
+    <groupId>com.dbeaver.jdbc</groupId>
+    <artifactId>com.dbeaver.jdbc.driver.d1</artifactId>
+    <version>1.0.0</version>
+</dependency>
 ```

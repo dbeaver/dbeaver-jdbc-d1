@@ -1,69 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.dbeaver</groupId>
-    <artifactId>dbeaver-jdbc-cloudflare-d1</artifactId>
+    <groupId>com.dbeaver.jdbc</groupId>
+    <artifactId>jdbc-cloudflare-d1</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>DBeaver Cloudflare D1 JDBC Driver</name>
-    <description>JDBC driver for the Cloudflare D1 REST API.</description>
+    <packaging>pom</packaging>
+    <name>DBeaver Cloudflare D1 JDBC Project</name>
+    <description>Cloudflare D1 JDBC driver</description>
     <url>https://github.com/dbeaver/dbeaver-jdbc-cloudflare-d1</url>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
+    <parent>
+        <groupId>com.dbeaver.common</groupId>
+        <artifactId>com.dbeaver.common.main</artifactId>
+        <version>2.9.0-SNAPSHOT</version>
+        <relativePath>../dbeaver-common</relativePath>
+    </parent>
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gson.version>2.13.2</gson.version>
-        <junit.version>5.13.4</junit.version>
-        <test.groups></test.groups>
-        <excluded.test.groups>integration</excluded.test.groups>
+        <java.version>${java.version.drivers}</java.version>
+        <d1.test.groups></d1.test.groups>
+        <d1.test.excludedGroups>integration</d1.test.excludedGroups>
     </properties>
-
+    <modules>
+        <module>com.dbeaver.jdbc.driver.d1</module>
+    </modules>
     <dependencies>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
+            <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.1</version>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-compiler-plugin</artifactId>
+                <version>${tycho-version}</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
+                    <useProjectSettings>false</useProjectSettings>
+                    <source>${java.version.min}</source>
+                    <target>${java.version.min}</target>
+                    <compilerId>${tycho.compiler.id}</compilerId>
+                    <compilerVersion>${java.version.min}</compilerVersion>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
-                    <groups>${test.groups}</groups>
-                    <excludedGroups>${excluded.test.groups}</excludedGroups>
+                    <groups>${d1.test.groups}</groups>
+                    <excludedGroups>${d1.test.excludedGroups}</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>d1-integration-tests</id>
+            <properties>
+                <d1.test.groups>integration</d1.test.groups>
+                <d1.test.excludedGroups>unit</d1.test.excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
 </project>

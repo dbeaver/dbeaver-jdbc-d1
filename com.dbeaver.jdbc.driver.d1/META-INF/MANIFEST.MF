@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: DBeaver Cloudflare D1 JDBC Driver
+Bundle-SymbolicName: com.dbeaver.jdbc.driver.d1
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Export-Package: com.dbeaver.jdbc.d1
+Require-Bundle: com.google.gson
+Bundle-Vendor: DBeaver Corp
+Automatic-Module-Name: com.dbeaver.jdbc.driver.d1
