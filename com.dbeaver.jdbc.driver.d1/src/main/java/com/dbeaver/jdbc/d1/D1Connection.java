@@ -759,6 +759,15 @@ public final class D1Connection extends AbstractJdbcConnection {
         catalogsLoadedAtNanos = 0;
     }
 
+    D1Database statementDatabase() throws SQLException {
+        checkOpen();
+        D1Database database = activeDatabase;
+        if (database == null) {
+            throw new SQLNonTransientConnectionException("No Cloudflare D1 database is selected", "3D000");
+        }
+        return database;
+    }
+
     String databaseProductVersion() {
         D1Database database = activeDatabase;
         return database == null || database.version() == null || database.version().isBlank()

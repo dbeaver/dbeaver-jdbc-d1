@@ -103,16 +103,30 @@ final class D1SqlParameters {
     }
 
     private static int namedParameterEnd(String sql, int index, boolean tclStyle) {
+        int start = index;
+        boolean hasName = false;
         while (index < sql.length()) {
             char current = sql.charAt(index);
-            if (Character.isLetterOrDigit(current) || current == '_' ||
-                tclStyle && (current == ':' || current == '(' || current == ')')) {
+            if (isIdentifierPart(current)) {
+                hasName = true;
                 index++;
+            } else if (tclStyle && current == ':' && hasNext(sql, index, ':')) {
+                index += 2;
+            } else if (tclStyle && hasName && current == '(') {
+                // Only a suffix opened inside the parameter may consume a closing parenthesis.
+                index++;
+                while (index < sql.length() && !Character.isWhitespace(sql.charAt(index)) && sql.charAt(index) != ')') {
+                    index++;
+                }
+                if (index < sql.length() && sql.charAt(index) == ')') {
+                    index++;
+                }
+                break;
             } else {
                 break;
             }
         }
-        return index;
+        return hasName ? index : start;
     }
 
     private static int skipIdentifier(String sql, int index) {

@@ -35,18 +35,30 @@ public final class JdbcValueUtils {
     }
 
     public static int toInt(Object value) {
+        if (value == null) {
+            return 0;
+        }
         return value instanceof Number number ? number.intValue() : Integer.parseInt(value.toString());
     }
 
     public static long toLong(Object value) {
+        if (value == null) {
+            return 0;
+        }
         return value instanceof Number number ? number.longValue() : Long.parseLong(value.toString());
     }
 
     public static float toFloat(Object value) {
+        if (value == null) {
+            return 0;
+        }
         return value instanceof Number number ? number.floatValue() : Float.parseFloat(value.toString());
     }
 
     public static double toDouble(Object value) {
+        if (value == null) {
+            return 0;
+        }
         return value instanceof Number number ? number.doubleValue() : Double.parseDouble(value.toString());
     }
 }

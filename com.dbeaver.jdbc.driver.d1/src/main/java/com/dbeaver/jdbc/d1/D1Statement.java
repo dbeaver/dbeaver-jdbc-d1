@@ -57,7 +57,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         String preparedSql,
         int preparedGeneratedKeys
     ) throws SQLException {
-        this(connection, preparedSql, preparedGeneratedKeys, null);
+        this(connection, preparedSql, preparedGeneratedKeys, connection.statementDatabase());
     }
 
     D1Statement(
@@ -549,7 +549,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
             response.columns(),
             rows,
             allRows,
-            connection.getCatalog(),
+            targetDatabase.name(),
             connection.getSchema()
         );
     }
@@ -673,9 +673,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     private String normalize(String sql) {
-        return targetDatabase == null
-            ? connection.nativeSQL(sql)
-            : connection.nativeSQL(sql, targetDatabase);
+        return connection.nativeSQL(sql, targetDatabase);
     }
 
     private void checkOpen() throws SQLException {

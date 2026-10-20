@@ -18,6 +18,9 @@ package com.dbeaver.jdbc.d1;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonPrimitive;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +37,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -135,6 +140,184 @@ class D1HttpTest {
             statement.setInt(2, 2);
             assertFalse(statement.execute());
             assertEquals(3, named.getParameterMetaData().getParameterCount());
+        }
+    }
+
+    @Test
+    void statementsKeepTheirDatabaseAfterTheConnectionCatalogChanges() throws Exception {
+        apiResponder = apiRequest -> apiRequest.path().endsWith("/test-database")
+            ? database("test-database", "primary")
+            : databaseList(1, 2, "{\"uuid\":\"test-database\",\"name\":\"primary\"}," +
+                "{\"uuid\":\"second-database\",\"name\":\"secondary\"}");
+        responder = body -> body.get("sql").getAsString().startsWith("SELECT")
+            ? raw(new String[] {"value"}, "[1]") : new Response(200, EMPTY_RESULT);
+        try (Connection connection = connect();
+             Statement statement = connection.createStatement();
+             PreparedStatement prepared = connection.prepareStatement("DELETE FROM primary.main.items WHERE id = ?")) {
+            prepared.setInt(1, 1);
+            connection.setCatalog("secondary");
+            assertEquals(0, prepared.executeUpdate());
+            assertTrue(rawPath.get().endsWith("/test-database/raw"));
+            assertEquals("DELETE FROM main.items WHERE id = ?", request.get().get("sql").getAsString());
+            try (ResultSet result = statement.executeQuery("SELECT 1 AS value")) {
+                assertTrue(rawPath.get().endsWith("/test-database/raw"));
+                assertEquals("primary", result.getMetaData().getCatalogName(1));
+            }
+            try (Statement newStatement = connection.createStatement()) {
+                newStatement.execute("SELECT 1 AS value");
+                assertTrue(rawPath.get().endsWith("/second-database/raw"));
+            }
+        }
+    }
+
+    @Test
+    void numericGettersReturnZeroAndSetWasNullForSqlNull() throws Exception {
+        responder = ignored -> raw(new String[] {"n"}, "[null]");
+        try (Connection connection = connect(); Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery("SELECT NULL AS n")) {
+            assertTrue(result.next());
+            assertEquals(0, result.getByte("n"));
+            assertTrue(result.wasNull());
+            assertEquals(0, result.getShort("n"));
+            assertTrue(result.wasNull());
+            assertEquals(0, result.getInt("n"));
+            assertTrue(result.wasNull());
+            assertEquals(0L, result.getLong("n"));
+            assertTrue(result.wasNull());
+            assertEquals(0F, result.getFloat("n"));
+            assertTrue(result.wasNull());
+            assertEquals(0D, result.getDouble("n"));
+            assertTrue(result.wasNull());
+        }
+    }
+
+    @Test
+    void timestampParametersRoundTripWithNanosecondPrecision() throws Exception {
+        responder = body -> raw(new String[] {"ts"}, "[" + body.getAsJsonArray("params").get(0) + "]");
+        try (Connection connection = connect(); PreparedStatement statement = connection.prepareStatement("SELECT ? AS ts")) {
+            for (String text : List.of("2026-10-20 12:00:00", "2026-10-20 12:00:00.1",
+                "2026-10-20 12:00:00.123456", "2026-10-20 12:00:00.123456789")) {
+                Timestamp timestamp = Timestamp.valueOf(text);
+                statement.setTimestamp(1, timestamp);
+                try (ResultSet result = statement.executeQuery()) {
+                    assertTrue(result.next());
+                    assertEquals(timestamp, result.getTimestamp("ts"));
+                    Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                    assertEquals(timestamp.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC),
+                        result.getTimestamp("ts", utc).toInstant());
+                }
+            }
+        }
+    }
+
+    @Test
+    void dollarParametersDoNotConsumeClosingSqlParentheses() throws Exception {
+        try (Connection sqlite = DriverManager.getConnection("jdbc:sqlite::memory:")) {
+            responder = body -> sqliteResponse(sqlite, body);
+            try (Connection connection = connect();
+                 PreparedStatement statement = connection.prepareStatement("SELECT abs($x), $x")) {
+                assertEquals(1, statement.getParameterMetaData().getParameterCount());
+                statement.setInt(1, -7);
+                try (ResultSet result = statement.executeQuery()) {
+                    assertTrue(result.next());
+                    assertEquals(7, result.getInt(1));
+                    assertEquals(-7, result.getInt(2));
+                }
+            }
+        }
+        assertEquals(1, D1SqlParameters.count("SELECT abs($ns::x(suffix)), $ns::x(suffix)"));
+        assertEquals(1, D1SqlParameters.count("SELECT abs($x()), $x()"));
+        assertEquals(2, D1SqlParameters.count("SELECT abs($x), $y"));
+        assertEquals(1, D1SqlParameters.count("SELECT :x, :x, '$ignored)'"));
+    }
+
+    @Test
+    void foreignKeyMetadataUsesCaseInsensitiveSqliteIdentifiers() throws Exception {
+        try (Connection sqlite = DriverManager.getConnection("jdbc:sqlite::memory:");
+             Statement setup = sqlite.createStatement()) {
+            setup.execute("CREATE TABLE parent(id INTEGER PRIMARY KEY)");
+            setup.execute("CREATE TABLE child(pid REFERENCES PARENT(id))");
+            responder = body -> sqliteResponse(sqlite, body);
+            try (Connection connection = connect()) {
+                try (ResultSet keys = connection.getMetaData().getExportedKeys(null, "main", "parent")) {
+                    assertTrue(keys.next());
+                    assertEquals("child", keys.getString("FKTABLE_NAME"));
+                    assertEquals("pid", keys.getString("FKCOLUMN_NAME"));
+                    assertFalse(keys.next());
+                }
+                try (ResultSet keys = connection.getMetaData().getCrossReference(null, "main", "parent", null, "main", "CHILD")) {
+                    assertTrue(keys.next());
+                    assertEquals("pid", keys.getString("FKCOLUMN_NAME"));
+                    assertFalse(keys.next());
+                }
+            }
+        }
+    }
+
+    @Test
+    void columnMetadataDistinguishesRowidAliasesFromNullablePrimaryKeys() throws Exception {
+        try (Connection sqlite = DriverManager.getConnection("jdbc:sqlite::memory:");
+             Statement setup = sqlite.createStatement()) {
+            setup.execute("CREATE TABLE rowid_alias(id INTEGER PRIMARY KEY)");
+            setup.execute("CREATE TABLE composite(id INTEGER, other INTEGER, PRIMARY KEY(id, other))");
+            setup.execute("CREATE TABLE descending(id INTEGER PRIMARY KEY DESC)");
+            setup.execute("CREATE TABLE without_rowid(id INTEGER PRIMARY KEY) WITHOUT ROWID");
+            setup.execute("CREATE TABLE regular(value INTEGER)");
+            responder = body -> sqliteResponse(sqlite, body);
+            try (Connection connection = connect()) {
+                for (String table : List.of("rowid_alias", "without_rowid", "composite", "descending", "regular")) {
+                    String column = table.equals("regular") ? "value" : "id";
+                    boolean notNull = table.equals("rowid_alias") || table.equals("without_rowid");
+                    try (ResultSet columns = connection.getMetaData().getColumns(null, "main", table, column)) {
+                        assertTrue(columns.next(), table);
+                        assertEquals(notNull ? DatabaseMetaData.columnNoNulls : DatabaseMetaData.columnNullable,
+                            columns.getInt("NULLABLE"), table);
+                        assertEquals(notNull ? "NO" : "YES", columns.getString("IS_NULLABLE"), table);
+                        assertEquals(table.equals("rowid_alias") ? "YES" : "NO", columns.getString("IS_AUTOINCREMENT"), table);
+                    }
+                }
+            }
+        }
+    }
+
+    private static Response sqliteResponse(Connection sqlite, JsonObject body) {
+        try (PreparedStatement statement = sqlite.prepareStatement(body.get("sql").getAsString())) {
+            JsonArray params = body.getAsJsonArray("params");
+            for (int index = 0; index < params.size(); index++) {
+                statement.setObject(index + 1, params.get(index).isJsonNull() ? null : params.get(index).getAsString());
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                JsonArray names = new JsonArray();
+                int count = result.getMetaData().getColumnCount();
+                for (int column = 1; column <= count; column++) {
+                    names.add(result.getMetaData().getColumnLabel(column));
+                }
+                JsonArray rows = new JsonArray();
+                while (result.next()) {
+                    JsonArray row = new JsonArray();
+                    for (int column = 1; column <= count; column++) {
+                        Object value = result.getObject(column);
+                        row.add(value == null ? JsonNull.INSTANCE : value instanceof Number number
+                            ? new JsonPrimitive(number) : new JsonPrimitive(value.toString()));
+                    }
+                    rows.add(row);
+                }
+                JsonObject values = new JsonObject();
+                values.add("columns", names);
+                values.add("rows", rows);
+                JsonObject item = new JsonObject();
+                item.addProperty("success", true);
+                item.add("meta", new JsonObject());
+                item.add("results", values);
+                JsonArray results = new JsonArray();
+                results.add(item);
+                JsonObject response = new JsonObject();
+                response.addProperty("success", true);
+                response.add("result", results);
+                return json(response.toString());
+            }
+        } catch (SQLException e) {
+            throw new AssertionError("Invalid SQLite metadata SQL: " + body, e);
         }
     }
 

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 
 public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Connection> {
+    private static final String ROWID_ALIAS = "p.pk = 1 AND upper(trim(p.type)) = 'INTEGER' AND NOT EXISTS (" +
+        "SELECT 1 FROM pragma_index_list(m.name) AS pk_index WHERE pk_index.origin = 'pk')";
     private static final String AFFINITY_TYPE = "CASE " +
         "WHEN upper(p.type) LIKE '%INT%' THEN " + Types.INTEGER + " " +
         "WHEN upper(p.type) LIKE '%CHAR%' OR upper(p.type) LIKE '%CLOB%' OR upper(p.type) LIKE '%TEXT%' THEN " +
@@ -379,13 +381,14 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         StringBuilder sql = new StringBuilder(
             "SELECT ? AS TABLE_CAT, 'main' AS TABLE_SCHEM, m.name AS TABLE_NAME, p.name AS COLUMN_NAME, " +
                 AFFINITY_TYPE + " AS DATA_TYPE, p.type AS TYPE_NAME, 0 AS COLUMN_SIZE, NULL AS BUFFER_LENGTH, " +
-                "NULL AS DECIMAL_DIGITS, 10 AS NUM_PREC_RADIX, CASE p.\"notnull\" WHEN 1 THEN 0 ELSE 1 END AS NULLABLE, " +
+                "NULL AS DECIMAL_DIGITS, 10 AS NUM_PREC_RADIX, CASE WHEN p.\"notnull\" = 1 OR (" + ROWID_ALIAS +
+                ") THEN 0 ELSE 1 END AS NULLABLE, " +
                 "NULL AS REMARKS, p.dflt_value AS COLUMN_DEF, NULL AS SQL_DATA_TYPE, NULL AS SQL_DATETIME_SUB, " +
                 "0 AS CHAR_OCTET_LENGTH, p.cid + 1 AS ORDINAL_POSITION, " +
-                "CASE p.\"notnull\" WHEN 1 THEN 'NO' ELSE 'YES' END AS IS_NULLABLE, NULL AS SCOPE_CATALOG, " +
+                "CASE WHEN p.\"notnull\" = 1 OR (" + ROWID_ALIAS + ") THEN 'NO' ELSE 'YES' END AS IS_NULLABLE, " +
+                "NULL AS SCOPE_CATALOG, " +
                 "NULL AS SCOPE_SCHEMA, NULL AS SCOPE_TABLE, NULL AS SOURCE_DATA_TYPE, " +
-                "CASE WHEN p.pk = 1 AND upper(trim(p.type)) = 'INTEGER' AND NOT EXISTS (" +
-                "SELECT 1 FROM pragma_index_list(m.name) AS pk_index WHERE pk_index.origin = 'pk') " +
+                "CASE WHEN " + ROWID_ALIAS + " " +
                 "THEN 'YES' ELSE 'NO' END AS IS_AUTOINCREMENT, " +
                 "CASE WHEN p.hidden IN (2, 3) THEN 'YES' ELSE 'NO' END AS IS_GENERATEDCOLUMN " +
                 "FROM sqlite_schema AS m JOIN pragma_table_xinfo(m.name) AS p WHERE m.type IN ('table', 'view') " +
@@ -449,7 +452,7 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
             DatabaseMetaData.importedKeyNotDeferrable + " AS DEFERRABILITY FROM sqlite_schema AS m " +
             "JOIN pragma_foreign_key_list(m.name) AS f " +
             "LEFT JOIN pragma_table_info(f.\"table\") AS pk ON f.\"to\" IS NULL AND pk.pk = f.seq + 1 " +
-            "WHERE m.type = 'table' AND m.name NOT LIKE '\\_cf\\_%' ESCAPE '\\' AND f.\"table\" = ? " +
+            "WHERE m.type = 'table' AND m.name NOT LIKE '\\_cf\\_%' ESCAPE '\\' AND f.\"table\" = ? COLLATE NOCASE " +
             "ORDER BY FKTABLE_NAME, f.id, f.seq";
         return query(sql, List.of(database.name(), database.name(), table), database);
     }
@@ -477,8 +480,8 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
             DatabaseMetaData.importedKeyNotDeferrable + " AS DEFERRABILITY FROM sqlite_schema AS m " +
             "JOIN pragma_foreign_key_list(m.name) AS f " +
             "LEFT JOIN pragma_table_info(f.\"table\") AS pk ON f.\"to\" IS NULL AND pk.pk = f.seq + 1 " +
-            "WHERE m.type = 'table' AND m.name = ? AND m.name NOT LIKE '\\_cf\\_%' ESCAPE '\\' " +
-            "AND f.\"table\" = ? " +
+            "WHERE m.type = 'table' AND m.name = ? COLLATE NOCASE AND m.name NOT LIKE '\\_cf\\_%' ESCAPE '\\' " +
+            "AND f.\"table\" = ? COLLATE NOCASE " +
             "ORDER BY f.id, f.seq";
         return query(sql, List.of(
             parentDatabase.name(),

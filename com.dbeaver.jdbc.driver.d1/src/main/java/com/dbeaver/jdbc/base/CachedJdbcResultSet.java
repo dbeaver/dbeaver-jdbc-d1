@@ -36,8 +36,6 @@ public class CachedJdbcResultSet<
     extends AbstractJdbcResultSet<STMT, META> {
     private static final SimpleDateFormat TIME_FORMAT_LONG = new SimpleDateFormat("HH:mm:ss.SSS");
     private static final SimpleDateFormat TIME_FORMAT_SHORT = new SimpleDateFormat("HH:mm:ss");
-    private static final SimpleDateFormat TIMESTAMP_FORMAT_LONG = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final SimpleDateFormat TIMESTAMP_FORMAT_SHORT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     protected OBJECT_TYPE[] rows;
     protected int index = -1;
@@ -161,17 +159,9 @@ public class CachedJdbcResultSet<
             } else if (object instanceof java.util.Date) {
                 return new Timestamp(((java.util.Date) object).getTime());
             } else {
-                java.util.Date timeValue;
-                try {
-                    timeValue = TIMESTAMP_FORMAT_LONG.parse(object.toString());
-                } catch (ParseException e) {
-                    try {
-                        timeValue = TIMESTAMP_FORMAT_SHORT.parse(object.toString());
-                    } catch (ParseException ex) {
-                        timeValue = Timestamp.valueOf(object.toString());
-                    }
-                }
-                return new Timestamp(timeValue.getTime());
+                Timestamp timestamp = Timestamp.valueOf(object.toString());
+                return cal == null ? timestamp : Timestamp.from(timestamp.toLocalDateTime()
+                    .atZone(cal.getTimeZone().toZoneId()).toInstant());
             }
         } catch (Exception e) {
             throw new SQLException("Error converting from object '" + object + "' to timestamp", e);

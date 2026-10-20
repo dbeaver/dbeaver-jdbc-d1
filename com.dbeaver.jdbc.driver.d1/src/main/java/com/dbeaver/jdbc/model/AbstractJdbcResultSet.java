@@ -322,7 +322,7 @@ public abstract class AbstractJdbcResultSet<
 
     @Override
     public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
-        return getTimestamp(findColumn(columnLabel));
+        return getTimestamp(findColumn(columnLabel), cal);
     }
 
     @Override
