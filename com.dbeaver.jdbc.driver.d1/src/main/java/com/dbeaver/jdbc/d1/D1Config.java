@@ -144,7 +144,12 @@ final class D1Config {
             if (equals < 1) {
                 throw new SQLException("Invalid URL property: " + item);
             }
-            properties.setProperty(decode(item.substring(0, equals)), decode(item.substring(equals + 1)));
+            String name = decode(item.substring(0, equals));
+            if (PROP_API_URL.equals(name)) {
+                throw new SQLException("Property '" + PROP_API_URL +
+                    "' must be supplied through Properties, not the JDBC URL");
+            }
+            properties.setProperty(name, decode(item.substring(equals + 1)));
         }
     }
 
@@ -154,6 +159,14 @@ final class D1Config {
             if (!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme())) ||
                 uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
                 throw new SQLException("Property '" + PROP_API_URL + "' must be an HTTP(S) base URL");
+            }
+            String host = uri.getHost();
+            boolean loopback = "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host) || "[::1]".equals(host);
+            boolean cloudflare = "https".equalsIgnoreCase(uri.getScheme()) && "api.cloudflare.com".equalsIgnoreCase(host) &&
+                (uri.getPort() == -1 || uri.getPort() == 443);
+            if (!cloudflare && !loopback) {
+                throw new SQLException("Property '" + PROP_API_URL +
+                    "' must use https://api.cloudflare.com on port 443 or a loopback HTTP(S) endpoint for local tests");
             }
             return uri;
         } catch (IllegalArgumentException e) {

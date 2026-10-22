@@ -28,6 +28,8 @@ List<D1Database> databases = D1Driver.discoverDatabases(properties);
 
 `discoverDatabases` lists the databases accessible to the credentials before a database is selected.
 
+The API endpoint defaults to `https://api.cloudflare.com/client/v4`. The `apiUrl` property is accepted only through `Properties`, not JDBC URL parameters. Remote endpoints must use `https://api.cloudflare.com` on the default HTTPS port. For local tests, HTTP(S) endpoints on `localhost`, `127.0.0.1`, or `[::1]` are also supported; use test credentials only with these endpoints.
+
 ## Development
 
 Run the aggregate build and hermetic unit tests:

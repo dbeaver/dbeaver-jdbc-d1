@@ -784,7 +784,10 @@ public final class D1Connection extends AbstractJdbcConnection {
         if (!config.databaseIds.isEmpty()) {
             D1Database current = activeDatabase;
             LinkedHashSet<String> databaseIds = new LinkedHashSet<>();
-            databaseIds.add(config.databaseId);
+            // Discovery connections have no selected database; their configured ID is only a placeholder.
+            if (current != null) {
+                databaseIds.add(config.databaseId);
+            }
             databaseIds.addAll(config.databaseIds);
             for (String databaseId : databaseIds) {
                 loaded.add(current != null && current.id().equals(databaseId) ? current : loadDatabase(databaseId));

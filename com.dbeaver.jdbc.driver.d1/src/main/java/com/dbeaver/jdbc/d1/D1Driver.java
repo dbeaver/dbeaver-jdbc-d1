@@ -95,7 +95,7 @@ public final class D1Driver implements Driver {
             property(D1Config.PROP_API_TOKEN, first(values, D1Config.PROP_API_TOKEN, D1Config.PROP_PASSWORD),
                 "Cloudflare API token with D1 Read or D1 Write permission. The JDBC 'password' property is an alias.", true),
             property(D1Config.PROP_API_URL, values.getProperty(D1Config.PROP_API_URL, D1Config.DEFAULT_API_URL),
-                "Cloudflare API base URL.", false),
+                "Cloudflare HTTPS API base URL; loopback HTTP(S) is allowed for local tests. Properties only.", false),
             property(D1Config.PROP_DATABASE_IDS, values.getProperty(D1Config.PROP_DATABASE_IDS),
                 "Optional comma-separated database UUIDs to expose as catalogs.", false),
             property(D1Config.PROP_CATALOG_CACHE_TTL,

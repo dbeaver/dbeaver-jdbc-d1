@@ -34,9 +34,6 @@ public class CachedJdbcResultSet<
     META extends CachedJdbcResultSetMetaData<STMT, OBJECT_TYPE>,
     OBJECT_TYPE>
     extends AbstractJdbcResultSet<STMT, META> {
-    private static final SimpleDateFormat TIME_FORMAT_LONG = new SimpleDateFormat("HH:mm:ss.SSS");
-    private static final SimpleDateFormat TIME_FORMAT_SHORT = new SimpleDateFormat("HH:mm:ss");
-
     protected OBJECT_TYPE[] rows;
     protected int index = -1;
 
@@ -133,10 +130,10 @@ public class CachedJdbcResultSet<
             } else {
                 java.util.Date timeValue;
                 try {
-                    timeValue = TIME_FORMAT_LONG.parse(object.toString());
+                    timeValue = new SimpleDateFormat("HH:mm:ss.SSS").parse(object.toString());
                 } catch (ParseException e) {
                     try {
-                        timeValue = TIME_FORMAT_SHORT.parse(object.toString());
+                        timeValue = new SimpleDateFormat("HH:mm:ss").parse(object.toString());
                     } catch (ParseException ex) {
                         timeValue = Time.valueOf(object.toString());
                     }
@@ -171,6 +168,9 @@ public class CachedJdbcResultSet<
 
     @Override
     public boolean next() throws SQLException {
+        if (rows == null) {
+            throw new SQLException("Result set is closed", "24000");
+        }
         index++;
         return index < rows.length;
     }

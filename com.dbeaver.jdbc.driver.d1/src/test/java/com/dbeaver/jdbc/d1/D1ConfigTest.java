@@ -94,6 +94,41 @@ class D1ConfigTest {
     }
 
     @Test
+    void onlyAllowsCloudflareHttpsOrExplicitLoopbackEndpoints() throws Exception {
+        Properties properties = properties();
+        for (String endpoint : new String[] {
+            D1Config.DEFAULT_API_URL, "https://api.cloudflare.com:443/client/v4/",
+            "http://localhost:8080/client/v4", "http://127.0.0.1:8080/client/v4",
+            "http://[::1]:8080/client/v4"
+        }) {
+            properties.setProperty("apiUrl", endpoint);
+            assertEquals(endpoint, D1Config.parse("jdbc:d1://database", properties).apiUrl.toString());
+        }
+        for (String endpoint : new String[] {
+            "http://api.cloudflare.com/client/v4", "https://api.cloudflare.com:8443/client/v4",
+            "http://example.com", "https://example.com", "https://api.cloudflare.com.example.com",
+            "http://localhost.example.com", "http://127.0.0.1.example.com", "http://127.0.0.2.example.com",
+            "https://user@api.cloudflare.com/client/v4", "https://api.cloudflare.com/client/v4?query=value",
+            "https://api.cloudflare.com/client/v4#fragment", "file:///client/v4"
+        }) {
+            properties.setProperty("apiUrl", endpoint);
+            assertThrows(SQLException.class, () -> D1Config.parse("jdbc:d1://database", properties), endpoint);
+        }
+    }
+
+    @Test
+    void rejectsEndpointOverridesInJdbcUrlParameters() {
+        for (String parameter : new String[] {"apiUrl", "%61piUrl"}) {
+            Properties properties = properties();
+            String url = "jdbc:d1://database?" + parameter + "=http%3A%2F%2Flocalhost%3A8080";
+            assertThrows(SQLException.class, () -> D1Config.parse(url, properties));
+            properties.setProperty("apiUrl", D1Config.DEFAULT_API_URL);
+            assertThrows(SQLException.class, () -> D1Config.parse(url, properties));
+            assertThrows(SQLException.class, () -> new D1Driver().getPropertyInfo(url, properties));
+        }
+    }
+
+    @Test
     void driverFollowsJdbcUrlContract() throws Exception {
         D1Driver driver = new D1Driver();
         assertTrue(driver.acceptsURL("jdbc:d1://database"));

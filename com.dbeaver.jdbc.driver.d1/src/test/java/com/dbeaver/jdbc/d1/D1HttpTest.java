@@ -41,6 +41,9 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -207,6 +210,38 @@ class D1HttpTest {
                         result.getTimestamp("ts", utc).toInstant());
                 }
             }
+        }
+    }
+
+    @Test
+    void parsesTimesConcurrentlyOnIndependentConnections() throws Exception {
+        responder = ignored -> raw(new String[] {"fractional", "whole"},
+            "[\"01:02:03.004\",\"21:45:56\"]");
+        long fractional = Time.valueOf("01:02:03").getTime() + 4;
+        long whole = Time.valueOf("21:45:56").getTime();
+        int workers = 8;
+        CyclicBarrier start = new CyclicBarrier(workers);
+        ExecutorService executor = Executors.newFixedThreadPool(workers);
+        try {
+            CompletableFuture<?>[] tasks = new CompletableFuture<?>[workers];
+            for (int worker = 0; worker < workers; worker++) {
+                tasks[worker] = CompletableFuture.runAsync(() -> {
+                    try (Connection connection = connect(); Statement statement = connection.createStatement();
+                         ResultSet result = statement.executeQuery("SELECT fractional, whole")) {
+                        assertTrue(result.next());
+                        start.await(10, TimeUnit.SECONDS);
+                        for (int iteration = 0; iteration < 500; iteration++) {
+                            assertEquals(fractional, result.getTime(1).getTime());
+                            assertEquals(whole, result.getTime(2).getTime());
+                        }
+                    } catch (Exception e) {
+                        throw new AssertionError(e);
+                    }
+                }, executor);
+            }
+            CompletableFuture.allOf(tasks).get(20, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
         }
     }
 
@@ -538,7 +573,27 @@ class D1HttpTest {
         assertTrue(connection.isClosed());
         assertTrue(statement.isClosed());
         assertTrue(resultSet.isClosed());
+        assertEquals("24000", assertThrows(SQLException.class, resultSet::next).getSQLState());
         connection.close();
+    }
+
+    @Test
+    void rejectsNextOnExplicitlyClosedAndReplacedResults() throws Exception {
+        responder = ignored -> raw(new String[] {"value"}, "[1]");
+        try (Connection connection = connect(); Statement statement = connection.createStatement()) {
+            ResultSet closed = statement.executeQuery("SELECT 1");
+            closed.close();
+            assertEquals("24000", assertThrows(SQLException.class, closed::next).getSQLState());
+            closed.close();
+
+            ResultSet replaced = statement.executeQuery("SELECT 1");
+            assertTrue(replaced.next());
+            try (ResultSet current = statement.executeQuery("SELECT 2")) {
+                assertTrue(replaced.isClosed());
+                assertEquals("24000", assertThrows(SQLException.class, replaced::next).getSQLState());
+                assertTrue(current.next());
+            }
+        }
     }
 
     @Test
@@ -889,6 +944,38 @@ class D1HttpTest {
     }
 
     @Test
+    void discoversOnlyConfiguredDatabaseIdsWithoutLoadingDiscoverySentinel() throws Exception {
+        apiResponder = apiRequest -> {
+            if (apiRequest.path().endsWith("/test-database")) {
+                return database("test-database", "primary");
+            }
+            if (apiRequest.path().endsWith("/second-database")) {
+                return database("second-database", "secondary");
+            }
+            return new Response(404, "{\"success\":false,\"errors\":[{\"message\":\"Unknown database\"}]}");
+        };
+        Properties properties = connectionProperties();
+        properties.setProperty("databaseIds", "test-database,second-database,test-database");
+
+        List<D1Database> databases = D1Driver.discoverDatabases(properties);
+
+        assertEquals(List.of("test-database", "second-database"), databases.stream().map(D1Database::id).toList());
+        assertEquals(2, requestCount.get());
+    }
+
+    @Test
+    void rejectsUrlEndpointOverridesBeforeSendingCredentials() {
+        Properties properties = connectionProperties();
+        String endpoint = properties.getProperty("apiUrl");
+        String url = "jdbc:d1://test-database?apiUrl=" + endpoint;
+        assertThrows(SQLException.class, () -> new D1Driver().connect(url, properties));
+        properties.remove("apiUrl");
+        assertThrows(SQLException.class, () -> new D1Driver().connect(url, properties));
+        assertEquals(0, requestCount.get());
+        assertNull(authorization.get());
+    }
+
+    @Test
     void discoversAndSwitchesPaginatedDatabaseCatalogs() throws Exception {
         AtomicInteger listRequests = new AtomicInteger();
         responder = body -> {
@@ -1074,7 +1161,7 @@ class D1HttpTest {
             ? database("second-database", "secondary")
             : database("test-database", "primary");
         Properties properties = connectionProperties();
-        properties.setProperty("databaseIds", "test-database,second-database");
+        properties.setProperty("databaseIds", "second-database");
 
         try (Connection connection = new D1Driver().connect("jdbc:d1://test-database", properties);
              ResultSet catalogs = connection.getMetaData().getCatalogs()) {
