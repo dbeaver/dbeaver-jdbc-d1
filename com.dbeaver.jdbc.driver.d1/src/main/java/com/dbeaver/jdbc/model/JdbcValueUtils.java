@@ -1,0 +1,64 @@
+/*
+ * DBeaver Cloudflare D1 JDBC Driver
+ * Copyright (C) 2026 DBeaver Corp and others
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.dbeaver.jdbc.model;
+
+public final class JdbcValueUtils {
+    private JdbcValueUtils() {
+    }
+
+    public static String toString(Object value, String defaultValue) {
+        return value == null ? defaultValue : value.toString();
+    }
+
+    public static boolean toBoolean(Object value) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof Number number) {
+            return number.doubleValue() != 0;
+        }
+        return value != null && Boolean.parseBoolean(value.toString());
+    }
+
+    public static int toInt(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        return value instanceof Number number ? number.intValue() : Integer.parseInt(value.toString());
+    }
+
+    public static long toLong(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        return value instanceof Number number ? number.longValue() : Long.parseLong(value.toString());
+    }
+
+    public static float toFloat(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        return value instanceof Number number ? number.floatValue() : Float.parseFloat(value.toString());
+    }
+
+    public static double toDouble(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        return value instanceof Number number ? number.doubleValue() : Double.parseDouble(value.toString());
+    }
+}
