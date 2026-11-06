@@ -4,12 +4,12 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dbeaver.jdbc</groupId>
-    <artifactId>jdbc-cloudflare-d1</artifactId>
+    <artifactId>jdbc-d1</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DBeaver Cloudflare D1 JDBC Project</name>
     <description>Cloudflare D1 JDBC driver</description>
-    <url>https://github.com/dbeaver/dbeaver-jdbc-cloudflare-d1</url>
+    <url>https://github.com/dbeaver/dbeaver-jdbc-d1</url>
     <parent>
         <groupId>com.dbeaver.common</groupId>
         <artifactId>com.dbeaver.common.main</artifactId>
@@ -30,7 +30,7 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>false</autoPublish>
                             <waitUntil>validated</waitUntil>
-                            <excludeArtifacts>jdbc-cloudflare-d1</excludeArtifacts>
+                            <excludeArtifacts>jdbc-d1</excludeArtifacts>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.dbeaver.jdbc</groupId>
-        <artifactId>jdbc-cloudflare-d1</artifactId>
+        <artifactId>jdbc-d1</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>com.dbeaver.jdbc.driver.d1</artifactId>
     <name>DBeaver Cloudflare D1 JDBC Driver</name>
     <description>JDBC driver for the Cloudflare D1 REST API.</description>
-    <url>https://github.com/dbeaver/dbeaver-jdbc-cloudflare-d1</url>
+    <url>https://github.com/dbeaver/dbeaver-jdbc-d1</url>
     <packaging>eclipse-plugin</packaging>
     <licenses>
         <license>
@@ -31,11 +31,21 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</connection>
-        <developerConnection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</developerConnection>
-        <url>git@github.com:dbeaver/dbeaver-jdbc-cloudflare-d1.git</url>
+        <connection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-d1.git</connection>
+        <developerConnection>scm:git:git@github.com:dbeaver/dbeaver-jdbc-d1.git</developerConnection>
+        <url>git@github.com:dbeaver/dbeaver-jdbc-d1.git</url>
     </scm>
     <dependencies>
+        <dependency>
+            <groupId>com.dbeaver.common</groupId>
+            <artifactId>org.jkiss.utils</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.dbeaver.common</groupId>
+            <artifactId>com.dbeaver.jdbc.api</artifactId>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
@@ -100,7 +110,7 @@
                                     <exclude>jmock:jmock</exclude>
                                 </excludes>
                             </artifactSet>
-                            <finalName>dbeaver-jdbc-cloudflare-d1-full-${project.version}</finalName>
+                            <finalName>dbeaver-jdbc-d1-full-${project.version}</finalName>
                         </configuration>
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
