@@ -2,14 +2,22 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dbeaver.jdbc</groupId>
-    <artifactId>jdbc-cloudflare-d1</artifactId>
+    <artifactId>jdbc-d1</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+
     <packaging>pom</packaging>
     <name>DBeaver Cloudflare D1 JDBC Project</name>
     <description>Cloudflare D1 JDBC driver</description>
-    <url>https://github.com/dbeaver/dbeaver-jdbc-cloudflare-d1</url>
+    <url>https://github.com/dbeaver/dbeaver-jdbc-d1</url>
+    <properties>
+        <java.version>${java.version.drivers}</java.version>
+        <d1.test.groups></d1.test.groups>
+        <d1.test.excludedGroups>integration</d1.test.excludedGroups>
+    </properties>
+
     <parent>
         <groupId>com.dbeaver.common</groupId>
         <artifactId>com.dbeaver.common.main</artifactId>
@@ -30,7 +38,7 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>false</autoPublish>
                             <waitUntil>validated</waitUntil>
-                            <excludeArtifacts>jdbc-cloudflare-d1</excludeArtifacts>
+                            <excludeArtifacts>jdbc-d1</excludeArtifacts>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -44,14 +52,11 @@
             </properties>
         </profile>
     </profiles>
-    <properties>
-        <java.version>${java.version.drivers}</java.version>
-        <d1.test.groups></d1.test.groups>
-        <d1.test.excludedGroups>integration</d1.test.excludedGroups>
-    </properties>
+
     <modules>
         <module>com.dbeaver.jdbc.driver.d1</module>
     </modules>
+
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -59,10 +64,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <build>
         <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+
         <plugins>
+            <!-- Use minimum supported Java -->
             <plugin>
                 <groupId>org.eclipse.tycho</groupId>
                 <artifactId>tycho-compiler-plugin</artifactId>
@@ -94,4 +102,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
