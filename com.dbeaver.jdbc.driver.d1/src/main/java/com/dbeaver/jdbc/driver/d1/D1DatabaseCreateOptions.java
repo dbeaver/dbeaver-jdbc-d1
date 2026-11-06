@@ -16,12 +16,14 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.Nullable;
+
 /**
  * Optional placement settings accepted by the Cloudflare D1 create-database API.
  */
 public record D1DatabaseCreateOptions(
-    String jurisdiction,
-    String primaryLocationHint
+    @Nullable String jurisdiction,
+    @Nullable String primaryLocationHint
 ) {
     public static final D1DatabaseCreateOptions DEFAULT = new D1DatabaseCreateOptions(null, null);
 }

@@ -18,6 +18,9 @@ package com.dbeaver.jdbc.driver.d1;
 
 import com.dbeaver.jdbc.model.AbstractJdbcConnection;
 import com.google.gson.*;
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.net.ConnectException;
@@ -67,7 +70,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     private int networkTimeout;
     private SQLWarning warnings;
 
-    D1Connection(String url, D1Config config) {
+    D1Connection(@NotNull String url, @NotNull D1Config config) {
         this.url = url;
         this.config = config;
         this.client = HttpClient.newBuilder()
@@ -76,17 +79,19 @@ public final class D1Connection extends AbstractJdbcConnection {
             .build();
     }
 
+    @NotNull
     D1PendingRequest send(
-        JsonObject request,
-        Duration timeout
+        @NotNull JsonObject request,
+        @Nullable Duration timeout
     ) throws SQLException {
         return send(request, timeout, null);
     }
 
+    @NotNull
     D1PendingRequest send(
-        JsonObject request,
-        Duration timeout,
-        D1Database targetDatabase
+        @NotNull JsonObject request,
+        @Nullable Duration timeout,
+        @Nullable D1Database targetDatabase
     ) throws SQLException {
         checkOpen();
         D1Database database = targetDatabase == null ? activeDatabase : targetDatabase;
@@ -96,11 +101,12 @@ public final class D1Connection extends AbstractJdbcConnection {
         return send("POST", config.rawEndpoint(database.id()), request, timeout, 1);
     }
 
+    @NotNull
     private D1PendingRequest send(
-        String method,
-        URI endpoint,
-        JsonObject body,
-        Duration timeout,
+        @NotNull String method,
+        @NotNull URI endpoint,
+        @Nullable JsonObject body,
+        @Nullable Duration timeout,
         int attempts
     ) throws SQLException {
         checkOpen();
@@ -154,7 +160,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return pending;
     }
 
-    private void registerPendingRequest(D1PendingRequest request) throws SQLException {
+    private void registerPendingRequest(@NotNull D1PendingRequest request) throws SQLException {
         synchronized (lifecycleLock) {
             if (closed) {
                 request.future().cancel(true);
@@ -169,7 +175,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         });
     }
 
-    void registerStatement(D1Statement statement) throws SQLException {
+    void registerStatement(@NotNull D1Statement statement) throws SQLException {
         synchronized (lifecycleLock) {
             if (closed) {
                 throw new SQLException("Connection is closed", "08003");
@@ -178,13 +184,14 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    void statementClosed(D1Statement statement) {
+    void statementClosed(@NotNull D1Statement statement) {
         synchronized (lifecycleLock) {
             statements.remove(statement);
         }
     }
 
-    D1Execution receive(D1PendingRequest request) throws SQLException {
+    @NotNull
+    D1Execution receive(@NotNull D1PendingRequest request) throws SQLException {
         ApiResponse apiResponse = receiveApi(request);
         JsonObject root = apiResponse.root();
         JsonArray result = arrayValue(root, "result");
@@ -205,7 +212,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return new D1Execution(List.copyOf(responses), apiResponse.warnings(), apiResponse.diagnostics());
     }
 
-    private ApiResponse receiveApi(D1PendingRequest request) throws SQLException {
+    @NotNull
+    private ApiResponse receiveApi(@NotNull D1PendingRequest request) throws SQLException {
         CompletableFuture<HttpResponse<byte[]>> future = request.future();
         try {
             HttpResponse<byte[]> response = future.get();
@@ -232,11 +240,12 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @NotNull
     private ApiResponse requestApi(
-        String method,
-        URI endpoint,
-        JsonObject body,
-        Duration timeout,
+        @NotNull String method,
+        @NotNull URI endpoint,
+        @Nullable JsonObject body,
+        @NotNull Duration timeout,
         boolean retrySafe
     ) throws SQLException {
         long started = System.nanoTime();
@@ -282,12 +291,13 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    private boolean isRetryable(SQLException error) {
+    private boolean isRetryable(@NotNull SQLException error) {
         int statusCode = lastRequestDiagnostics.statusCode();
         return statusCode == 429 || statusCode >= 500 ||
             hasCause(error, ConnectException.class) || hasCause(error, HttpTimeoutException.class);
     }
 
+    @NotNull
     private static Duration remaining(long deadline) throws SQLTimeoutException {
         long nanos = deadline - System.nanoTime();
         if (nanos <= 0) {
@@ -296,7 +306,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return Duration.ofNanos(nanos);
     }
 
-    private static long retryAfterMillis(String value) {
+    private static long retryAfterMillis(@Nullable String value) {
         if (value == null) {
             return 0;
         }
@@ -307,9 +317,10 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @NotNull
     private static D1RequestDiagnostics diagnostics(
-        HttpResponse<?> response,
-        D1PendingRequest request
+        @NotNull HttpResponse<?> response,
+        @NotNull D1PendingRequest request
     ) {
         return new D1RequestDiagnostics(
             response.statusCode(),
@@ -322,7 +333,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
-    private void recordFailedDiagnostics(D1PendingRequest request) {
+    private void recordFailedDiagnostics(@NotNull D1PendingRequest request) {
         lastRequestDiagnostics = new D1RequestDiagnostics(
             0,
             TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - request.startedNanos()),
@@ -334,8 +345,9 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
+    @NotNull
     private static D1RequestDiagnostics withTotalElapsed(
-        D1RequestDiagnostics diagnostics,
+        @NotNull D1RequestDiagnostics diagnostics,
         long startedNanos
     ) {
         return new D1RequestDiagnostics(
@@ -349,7 +361,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
-    private static JsonObject parseResponse(int statusCode, byte[] body) throws SQLException {
+    @NotNull
+    private static JsonObject parseResponse(int statusCode, @NotNull byte[] body) throws SQLException {
         try {
             JsonElement parsed = JsonParser.parseString(new String(body, StandardCharsets.UTF_8));
             if (!parsed.isJsonObject()) {
@@ -361,7 +374,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    private static D1Response toResponse(JsonObject item) throws SQLException {
+    @NotNull
+    private static D1Response toResponse(@NotNull JsonObject item) throws SQLException {
         JsonObject results = objectValue(item, "results");
         JsonArray columnValues = results == null ? null : arrayValue(results, "columns");
         JsonArray rowValues = results == null ? null : arrayValue(results, "rows");
@@ -411,7 +425,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
-    private static Object jdbcValue(JsonElement value) throws SQLException {
+    @Nullable
+    private static Object jdbcValue(@NotNull JsonElement value) throws SQLException {
         if (value.isJsonNull()) {
             return null;
         }
@@ -465,7 +480,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return decimal;
     }
 
-    private SQLException requestException(Throwable cause) {
+    @NotNull
+    private SQLException requestException(@NotNull Throwable cause) {
         if (hasCause(cause, UnknownHostException.class) || hasCause(cause, UnresolvedAddressException.class)) {
             return new SQLNonTransientConnectionException("Cloudflare API host cannot be resolved", "08001", cause);
         }
@@ -490,7 +506,8 @@ public final class D1Connection extends AbstractJdbcConnection {
             "Cloudflare D1 API request failed: " + causeDescription(cause), "08001", cause);
     }
 
-    private static SQLException apiException(int statusCode, JsonObject root) {
+    @NotNull
+    private static SQLException apiException(int statusCode, @NotNull JsonObject root) {
         StringBuilder message = new StringBuilder("Cloudflare D1 API error");
         int vendorCode = 0;
         try {
@@ -532,7 +549,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return new SQLException(message.toString(), statusCode == 404 ? "08001" : "42000", vendorCode);
     }
 
-    private static SQLWarning warnings(JsonArray messages) throws SQLException {
+    @Nullable
+    private static SQLWarning warnings(@Nullable JsonArray messages) throws SQLException {
         SQLWarning first = null;
         SQLWarning last = null;
         if (messages == null) {
@@ -559,7 +577,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return first;
     }
 
-    private void appendWarnings(SQLWarning additional) {
+    private void appendWarnings(@Nullable SQLWarning additional) {
         if (additional == null) {
             return;
         }
@@ -571,8 +589,8 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     private static boolean booleanValue(
-        JsonObject object,
-        String name,
+        @NotNull JsonObject object,
+        @NotNull String name,
         boolean defaultValue
     ) throws SQLException {
         JsonElement value = object.get(name);
@@ -586,15 +604,16 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     private static long longValue(
-        JsonObject object,
-        String name,
+        @Nullable JsonObject object,
+        @NotNull String name,
         long defaultValue
     ) throws SQLException {
         Long value = nullableLongValue(object, name);
         return value == null ? defaultValue : value;
     }
 
-    private static Long nullableLongValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static Long nullableLongValue(@Nullable JsonObject object, @NotNull String name) throws SQLException {
         if (object == null) {
             return null;
         }
@@ -612,7 +631,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    private static Double nullableDoubleValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static Double nullableDoubleValue(@Nullable JsonObject object, @NotNull String name) throws SQLException {
         if (object == null) {
             return null;
         }
@@ -634,7 +654,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    private static Boolean nullableBooleanValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static Boolean nullableBooleanValue(@Nullable JsonObject object, @NotNull String name) throws SQLException {
         if (object == null) {
             return null;
         }
@@ -648,7 +669,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return value.getAsBoolean();
     }
 
-    private static Integer intValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static Integer intValue(@NotNull JsonObject object, @NotNull String name) throws SQLException {
         JsonElement value = object.get(name);
         if (value == null || value.isJsonNull()) {
             return null;
@@ -664,15 +686,16 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     private static int intValue(
-        JsonObject object,
-        String name,
+        @NotNull JsonObject object,
+        @NotNull String name,
         int defaultValue
     ) throws SQLException {
         Integer value = intValue(object, name);
         return value == null ? defaultValue : value;
     }
 
-    private static String stringValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static String stringValue(@Nullable JsonObject object, @NotNull String name) throws SQLException {
         if (object == null) {
             return null;
         }
@@ -686,7 +709,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return value.getAsString();
     }
 
-    private static JsonObject objectValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static JsonObject objectValue(@NotNull JsonObject object, @NotNull String name) throws SQLException {
         JsonElement value = object.get(name);
         if (value == null || value.isJsonNull()) {
             return null;
@@ -697,7 +721,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return value.getAsJsonObject();
     }
 
-    private static JsonArray arrayValue(JsonObject object, String name) throws SQLException {
+    @Nullable
+    private static JsonArray arrayValue(@NotNull JsonObject object, @NotNull String name) throws SQLException {
         JsonElement value = object.get(name);
         if (value == null || value.isJsonNull()) {
             return null;
@@ -708,14 +733,16 @@ public final class D1Connection extends AbstractJdbcConnection {
         return value.getAsJsonArray();
     }
 
-    private static SQLException invalidField(String name, String expected) {
+    @NotNull
+    private static SQLException invalidField(@NotNull String name, @NotNull String expected) {
         return new SQLException("Cloudflare D1 response field '" + name + "' is not " + expected, "08006");
     }
 
+    @NotNull
     private static SQLException invalidField(
-        String name,
-        String expected,
-        RuntimeException cause
+        @NotNull String name,
+        @NotNull String expected,
+        @NotNull RuntimeException cause
     ) {
         return new SQLException(
             "Cloudflare D1 response field '" + name + "' is not " + expected,
@@ -724,7 +751,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
-    private static boolean hasCause(Throwable cause, Class<? extends Throwable> type) {
+    private static boolean hasCause(@Nullable Throwable cause, @NotNull Class<? extends Throwable> type) {
         for (Throwable current = cause; current != null; current = current.getCause()) {
             if (type.isInstance(current)) {
                 return true;
@@ -733,7 +760,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return false;
     }
 
-    private static String causeDescription(Throwable cause) {
+    @NotNull
+    private static String causeDescription(@NotNull Throwable cause) {
         for (Throwable current = cause; current != null; current = current.getCause()) {
             if (current.getMessage() != null && !current.getMessage().isBlank()) {
                 return current.getMessage();
@@ -742,6 +770,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return cause.getClass().getSimpleName();
     }
 
+    @NotNull
     D1Config config() {
         return config;
     }
@@ -749,6 +778,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Returns diagnostics for the most recently completed HTTP request on this connection.
      */
+    @NotNull
     public D1RequestDiagnostics getLastRequestDiagnostics() {
         return lastRequestDiagnostics;
     }
@@ -759,6 +789,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         catalogsLoadedAtNanos = 0;
     }
 
+    @NotNull
     D1Database statementDatabase() throws SQLException {
         checkOpen();
         D1Database database = activeDatabase;
@@ -768,6 +799,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return database;
     }
 
+    @NotNull
     String databaseProductVersion() {
         D1Database database = activeDatabase;
         return database == null || database.version() == null || database.version().isBlank()
@@ -778,6 +810,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Reloads the databases visible to the configured API token.
      */
+    @NotNull
     public List<D1Database> refreshDatabases() throws SQLException {
         checkOpen();
         List<D1Database> loaded = new ArrayList<>();
@@ -826,6 +859,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return databases;
     }
 
+    @NotNull
     List<D1Database> catalogDatabases() throws SQLException {
         long loadedAt = catalogsLoadedAtNanos;
         if (loadedAt == 0 || config.catalogCacheTtl.isZero() ||
@@ -835,7 +869,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return databases;
     }
 
-    private void updateDatabases(List<D1Database> loaded) {
+    private void updateDatabases(@NotNull List<D1Database> loaded) {
         databases = List.copyOf(loaded);
         catalogsLoadedAtNanos = System.nanoTime();
         D1Database current = activeDatabase;
@@ -850,6 +884,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Returns the last database-list snapshot loaded from Cloudflare.
      */
+    @NotNull
     public List<D1Database> getDatabases() {
         return databases;
     }
@@ -857,7 +892,8 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Returns detailed information for a database selected by catalog name or UUID.
      */
-    public D1Database getDatabase(String catalog) throws SQLException {
+    @NotNull
+    public D1Database getDatabase(@NotNull String catalog) throws SQLException {
         D1Database database = resolveDatabase(catalog);
         D1Database detailed = loadDatabase(database.id());
         replaceDatabase(detailed);
@@ -868,9 +904,10 @@ public final class D1Connection extends AbstractJdbcConnection {
      * Updates Cloudflare's read-replication mode for a database.
      * REST SQL requests still target the primary; replica query routing requires the Workers Sessions API.
      */
+    @NotNull
     public D1Database setReadReplication(
-        String catalog,
-        D1ReadReplicationMode mode
+        @NotNull String catalog,
+        @NotNull D1ReadReplicationMode mode
     ) throws SQLException {
         D1Database database = resolveDatabase(catalog);
         JsonObject replication = new JsonObject();
@@ -892,16 +929,18 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Gets the current Time Travel bookmark for a database.
      */
-    public String getTimeTravelBookmark(String catalog) throws SQLException {
+    @NotNull
+    public String getTimeTravelBookmark(@NotNull String catalog) throws SQLException {
         return getTimeTravelBookmark(catalog, null);
     }
 
     /**
      * Gets the nearest Time Travel bookmark at or before an optional timestamp.
      */
+    @NotNull
     public String getTimeTravelBookmark(
-        String catalog,
-        Instant timestamp
+        @NotNull String catalog,
+        @Nullable Instant timestamp
     ) throws SQLException {
         D1Database database = resolveDatabase(catalog);
         URI endpoint = timeTravelEndpoint(
@@ -922,9 +961,10 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Restores a database to a Time Travel bookmark.
      */
+    @NotNull
     public D1TimeTravelRestore restoreToBookmark(
-        String catalog,
-        String bookmark
+        @NotNull String catalog,
+        @NotNull String bookmark
     ) throws SQLException {
         if (bookmark.isBlank()) {
             throw new SQLException("Cloudflare D1 Time Travel bookmark must not be blank", "42000");
@@ -935,17 +975,19 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Restores a database to the nearest available state at or before a timestamp.
      */
+    @NotNull
     public D1TimeTravelRestore restoreToTimestamp(
-        String catalog,
-        Instant timestamp
+        @NotNull String catalog,
+        @NotNull Instant timestamp
     ) throws SQLException {
         return restore(catalog, "timestamp", timestamp.toString());
     }
 
+    @NotNull
     private D1TimeTravelRestore restore(
-        String catalog,
-        String parameter,
-        String value
+        @NotNull String catalog,
+        @NotNull String parameter,
+        @NotNull String value
     ) throws SQLException {
         D1Database database = resolveDatabase(catalog);
         URI endpoint = timeTravelEndpoint(database.id(), "restore", parameter, value);
@@ -965,16 +1007,18 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Creates a database with Cloudflare's default placement settings.
      */
-    public D1Database createDatabase(String name) throws SQLException {
+    @NotNull
+    public D1Database createDatabase(@NotNull String name) throws SQLException {
         return createDatabase(name, D1DatabaseCreateOptions.DEFAULT);
     }
 
     /**
      * Creates a database in this connection's Cloudflare account.
      */
+    @NotNull
     public D1Database createDatabase(
-        String name,
-        D1DatabaseCreateOptions options
+        @NotNull String name,
+        @NotNull D1DatabaseCreateOptions options
     ) throws SQLException {
         checkOpen();
         if (name.isBlank()) {
@@ -998,7 +1042,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Deletes a database by UUID from this connection's Cloudflare account.
      */
-    public void deleteDatabase(String databaseId) throws SQLException {
+    public void deleteDatabase(@NotNull String databaseId) throws SQLException {
         checkOpen();
         requestApi("DELETE", config.databaseEndpoint(databaseId), null, config.queryTimeout, false);
         databases = databases.stream().filter(database -> !database.id().equals(databaseId)).toList();
@@ -1012,12 +1056,13 @@ public final class D1Connection extends AbstractJdbcConnection {
     /**
      * Deletes a database selected by its catalog name or UUID.
      */
-    public void deleteCatalog(String catalog) throws SQLException {
+    public void deleteCatalog(@NotNull String catalog) throws SQLException {
         D1Database database = resolveDatabase(catalog);
         deleteDatabase(database.id());
     }
 
-    D1Database resolveDatabase(String catalog) throws SQLException {
+    @NotNull
+    D1Database resolveDatabase(@NotNull String catalog) throws SQLException {
         D1Database database = findDatabase(catalog);
         if (database == null) {
             refreshDatabases();
@@ -1029,7 +1074,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return database;
     }
 
-    private D1Database loadDatabase(String databaseId) throws SQLException {
+    @NotNull
+    private D1Database loadDatabase(@NotNull String databaseId) throws SQLException {
         try {
             ApiResponse response = requestApi(
                 "GET",
@@ -1047,16 +1093,18 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @NotNull
     private static D1Database databaseResult(
-        ApiResponse response,
-        String operation
+        @NotNull ApiResponse response,
+        @NotNull String operation
     ) throws SQLException {
         return toDatabase(requiredResult(response, operation));
     }
 
+    @NotNull
     private static JsonObject requiredResult(
-        ApiResponse response,
-        String operation
+        @NotNull ApiResponse response,
+        @NotNull String operation
     ) throws SQLException {
         JsonObject result = objectValue(response.root(), "result");
         if (result == null) {
@@ -1065,7 +1113,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         return result;
     }
 
-    private void replaceDatabase(D1Database updated) {
+    private void replaceDatabase(@NotNull D1Database updated) {
         List<D1Database> replacement = new ArrayList<>(databases.size());
         boolean found = false;
         for (D1Database database : databases) {
@@ -1086,11 +1134,12 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @NotNull
     private URI timeTravelEndpoint(
-        String databaseId,
-        String operation,
-        String parameter,
-        String value
+        @NotNull String databaseId,
+        @NotNull String operation,
+        @Nullable String parameter,
+        @Nullable String value
     ) throws SQLException {
         StringBuilder endpoint = new StringBuilder(config.databaseEndpoint(databaseId).toString())
             .append("/time_travel/").append(operation);
@@ -1101,7 +1150,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return URI.create(endpoint.toString());
     }
 
-    private D1Database findDatabase(String nameOrId) {
+    @Nullable
+    private D1Database findDatabase(@NotNull String nameOrId) {
         for (D1Database database : databases) {
             if (database.id().equals(nameOrId) || database.name().equals(nameOrId)) {
                 return database;
@@ -1110,7 +1160,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         return null;
     }
 
-    private static D1Database toDatabase(JsonObject object) throws SQLException {
+    @NotNull
+    private static D1Database toDatabase(@NotNull JsonObject object) throws SQLException {
         String id = stringValue(object, "uuid");
         String name = stringValue(object, "name");
         if (id == null || id.isBlank() || name == null || name.isBlank()) {
@@ -1128,7 +1179,8 @@ public final class D1Connection extends AbstractJdbcConnection {
         );
     }
 
-    private static D1ReadReplicationMode readReplicationMode(JsonObject replication) throws SQLException {
+    @Nullable
+    private static D1ReadReplicationMode readReplicationMode(@Nullable JsonObject replication) throws SQLException {
         String mode = stringValue(replication, "mode");
         if (mode == null) {
             return null;
@@ -1144,9 +1196,9 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     private static void addNonBlank(
-        JsonObject object,
-        String name,
-        String value
+        @NotNull JsonObject object,
+        @NotNull String name,
+        @Nullable String value
     ) {
         if (value != null && !value.isBlank()) {
             object.addProperty(name, value);
@@ -1159,6 +1211,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @NotNull
     @Override
     public Statement createStatement(int type, int concurrency, int holdability) throws SQLException {
         validateResultSet(type, concurrency, holdability);
@@ -1166,9 +1219,10 @@ public final class D1Connection extends AbstractJdbcConnection {
         return new D1Statement(this, null, Statement.NO_GENERATED_KEYS);
     }
 
+    @NotNull
     @Override
     public PreparedStatement prepareStatement(
-        String sql,
+        @NotNull String sql,
         int type,
         int concurrency,
         int holdability
@@ -1179,20 +1233,23 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
-    public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+    @NotNull
+    public PreparedStatement prepareStatement(@NotNull String sql, int autoGeneratedKeys) throws SQLException {
         validateGeneratedKeys(autoGeneratedKeys);
         checkOpen();
         return new D1Statement(this, sql, autoGeneratedKeys);
     }
 
     @Override
-    public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+    @NotNull
+    public PreparedStatement prepareStatement(@NotNull String sql, @Nullable int[] columnIndexes) throws SQLException {
         checkOpen();
         return new D1Statement(this, sql, Statement.RETURN_GENERATED_KEYS);
     }
 
     @Override
-    public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+    @NotNull
+    public PreparedStatement prepareStatement(@NotNull String sql, @Nullable String[] columnNames) throws SQLException {
         checkOpen();
         return new D1Statement(this, sql, Statement.RETURN_GENERATED_KEYS);
     }
@@ -1212,18 +1269,21 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
+    @NotNull
     public D1DatabaseMetaData getMetaData() throws SQLException {
         checkOpen();
         return new D1DatabaseMetaData(this, url);
     }
 
     @Override
-    public String nativeSQL(String sql) {
+    @NotNull
+    public String nativeSQL(@NotNull String sql) {
         D1Database database = activeDatabase;
         return database == null ? sql : nativeSQL(sql, database);
     }
 
-    String nativeSQL(String sql, D1Database database) {
+    @NotNull
+    String nativeSQL(@NotNull String sql, @NotNull D1Database database) {
         return D1SqlCatalogs.normalize(sql, database.name(), database.id());
     }
 
@@ -1256,13 +1316,14 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
+    @Nullable
     public String getCatalog() {
         D1Database database = activeDatabase;
         return database == null ? null : database.name();
     }
 
     @Override
-    public void setCatalog(String catalog) throws SQLException {
+    public void setCatalog(@Nullable String catalog) throws SQLException {
         checkOpen();
         if (catalog == null || catalog.isEmpty()) {
             return;
@@ -1279,12 +1340,13 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
+    @NotNull
     public String getSchema() {
         return "main";
     }
 
     @Override
-    public void setSchema(String schema) throws SQLException {
+    public void setSchema(@Nullable String schema) throws SQLException {
         if (schema != null && !schema.isEmpty() && !"main".equalsIgnoreCase(schema)) {
             throw new SQLFeatureNotSupportedException("Cloudflare D1 only exposes the 'main' schema");
         }
@@ -1303,6 +1365,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
+    @Nullable
     public SQLWarning getWarnings() {
         return warnings;
     }
@@ -1332,7 +1395,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
-    public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+    public void setNetworkTimeout(@NotNull Executor executor, int milliseconds) throws SQLException {
         if (milliseconds < 0) {
             throw new SQLException("Network timeout must not be negative");
         }
@@ -1345,7 +1408,7 @@ public final class D1Connection extends AbstractJdbcConnection {
     }
 
     @Override
-    public void abort(Executor executor) throws SQLException {
+    public void abort(@NotNull Executor executor) throws SQLException {
         Shutdown shutdown = beginShutdown();
         if (shutdown == null) {
             return;
@@ -1366,6 +1429,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
+    @Nullable
     private Shutdown beginShutdown() {
         synchronized (lifecycleLock) {
             if (closed) {
@@ -1379,7 +1443,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
     }
 
-    private static void release(Shutdown shutdown) {
+    private static void release(@NotNull Shutdown shutdown) {
         shutdown.requests().forEach(request -> request.future().cancel(true));
         shutdown.statements().forEach(D1Statement::close);
     }
@@ -1391,20 +1455,20 @@ public final class D1Connection extends AbstractJdbcConnection {
 
     private record ApiResponse(
         int statusCode,
-        JsonObject root,
-        SQLWarning warnings,
-        D1RequestDiagnostics diagnostics
+        @NotNull JsonObject root,
+        @Nullable SQLWarning warnings,
+        @NotNull D1RequestDiagnostics diagnostics
     ) {
     }
 
     private record Shutdown(
-        List<D1Statement> statements,
-        List<D1PendingRequest> requests
+        @NotNull List<D1Statement> statements,
+        @NotNull List<D1PendingRequest> requests
     ) {
     }
 
     record D1PendingRequest(
-        CompletableFuture<HttpResponse<byte[]>> future,
+        @NotNull CompletableFuture<HttpResponse<byte[]>> future,
         long startedNanos,
         int attempts
     ) {
@@ -1422,18 +1486,19 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
 
         @Override
+        @NotNull
         public CompletionStage<byte[]> getBody() {
             return result;
         }
 
         @Override
-        public void onSubscribe(Flow.Subscription subscription) {
+        public void onSubscribe(@NotNull Flow.Subscription subscription) {
             this.subscription = subscription;
             subscription.request(Long.MAX_VALUE);
         }
 
         @Override
-        public void onNext(List<ByteBuffer> buffers) {
+        public void onNext(@NotNull List<ByteBuffer> buffers) {
             for (ByteBuffer buffer : buffers) {
                 int count = buffer.remaining();
                 if (count > limit - size) {
@@ -1449,7 +1514,7 @@ public final class D1Connection extends AbstractJdbcConnection {
         }
 
         @Override
-        public void onError(Throwable throwable) {
+        public void onError(@NotNull Throwable throwable) {
             result.completeExceptionally(throwable);
         }
 

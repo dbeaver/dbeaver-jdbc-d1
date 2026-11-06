@@ -19,6 +19,7 @@ package com.dbeaver.jdbc.driver.d1;
 import com.dbeaver.jdbc.model.AbstractJdbcResultSetMetaData;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
+
 import java.sql.Types;
 
 final class D1ResultSetMetaData extends AbstractJdbcResultSetMetaData<D1Statement> {

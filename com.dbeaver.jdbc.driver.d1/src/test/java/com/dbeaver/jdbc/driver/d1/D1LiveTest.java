@@ -16,6 +16,8 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -267,14 +269,14 @@ class D1LiveTest {
         }
     }
 
-    private static boolean notBlank(String value) {
+    private static boolean notBlank(@Nullable String value) {
         return value != null && !value.isBlank();
     }
 
     private static void assertForeignKeyColumns(
-        ResultSet keys,
-        String parentTable,
-        String childTable
+        @NotNull ResultSet keys,
+        @NotNull String parentTable,
+        @NotNull String childTable
     ) throws SQLException {
         assertTrue(keys.next());
         assertEquals(parentTable, keys.getString("PKTABLE_NAME"));
@@ -289,7 +291,7 @@ class D1LiveTest {
         assertFalse(keys.next());
     }
 
-    private static boolean hasAutoIncrementColumn(ResultSet columns) throws SQLException {
+    private static boolean hasAutoIncrementColumn(@NotNull ResultSet columns) throws SQLException {
         while (columns.next()) {
             if ("YES".equals(columns.getString("IS_AUTOINCREMENT"))) {
                 return true;

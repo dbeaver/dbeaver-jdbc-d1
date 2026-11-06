@@ -16,18 +16,21 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 record D1Response(
-    String[] columns,
-    Object[][] rows,
+    @NotNull String[] columns,
+    @NotNull Object[][] rows,
     long changes,
-    Long lastRowId,
-    String servedByRegion,
-    String servedByColo,
+    @Nullable Long lastRowId,
+    @Nullable String servedByRegion,
+    @Nullable String servedByColo,
     long rowsRead,
     long rowsWritten,
-    Double sqlDurationMillis,
-    Long sizeAfter,
-    Boolean changedDatabase,
-    Boolean servedByPrimary
+    @Nullable Double sqlDurationMillis,
+    @Nullable Long sizeAfter,
+    @Nullable Boolean changedDatabase,
+    @Nullable Boolean servedByPrimary
 ) {
 }

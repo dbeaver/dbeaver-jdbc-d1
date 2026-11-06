@@ -16,13 +16,15 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -34,10 +36,10 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -226,7 +228,8 @@ class D1HttpTest {
             CompletableFuture<?>[] tasks = new CompletableFuture<?>[workers];
             for (int worker = 0; worker < workers; worker++) {
                 tasks[worker] = CompletableFuture.runAsync(() -> {
-                    try (Connection connection = connect(); Statement statement = connection.createStatement();
+                    try (Connection connection = connect();
+                         Statement statement = connection.createStatement();
                          ResultSet result = statement.executeQuery("SELECT fractional, whole")) {
                         assertTrue(result.next());
                         start.await(10, TimeUnit.SECONDS);
@@ -315,7 +318,8 @@ class D1HttpTest {
         }
     }
 
-    private static Response sqliteResponse(Connection sqlite, JsonObject body) {
+    @NotNull
+    private static Response sqliteResponse(@NotNull Connection sqlite, @NotNull JsonObject body) {
         try (PreparedStatement statement = sqlite.prepareStatement(body.get("sql").getAsString())) {
             JsonArray params = body.getAsJsonArray("params");
             for (int index = 0; index < params.size(); index++) {
@@ -566,7 +570,7 @@ class D1HttpTest {
         responder = ignored -> raw(new String[] {"value"}, "[1]");
         Connection connection = connect();
         Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("SELECT 1");
+        final ResultSet resultSet = statement.executeQuery("SELECT 1");
 
         connection.close();
 
@@ -599,7 +603,7 @@ class D1HttpTest {
     @Test
     void abortCancelsSqlAndAdministrativeRequests() throws Exception {
         D1Connection sqlConnection = (D1Connection) connect();
-        Statement statement = sqlConnection.createStatement();
+        final Statement statement = sqlConnection.createStatement();
         stallStarted = new CountDownLatch(1);
         stallRelease = new CountDownLatch(1);
         stallRawResponse = true;
@@ -615,7 +619,7 @@ class D1HttpTest {
         assertTrue(statement.isClosed());
         stallRelease.countDown();
 
-        D1Connection apiConnection = (D1Connection) connect();
+        final D1Connection apiConnection = (D1Connection) connect();
         stallStarted = new CountDownLatch(1);
         stallRelease = new CountDownLatch(1);
         stallRawResponse = false;
@@ -1220,7 +1224,7 @@ class D1HttpTest {
         }
     }
 
-    private void handle(HttpExchange exchange) throws IOException {
+    private void handle(@NotNull HttpExchange exchange) throws IOException {
         requestCount.incrementAndGet();
         authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
         byte[] requestBody = exchange.getRequestBody().readAllBytes();
@@ -1253,7 +1257,7 @@ class D1HttpTest {
         exchange.close();
     }
 
-    private void stall(HttpExchange exchange) throws IOException {
+    private void stall(@NotNull HttpExchange exchange) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.sendResponseHeaders(200, 0);
         exchange.getResponseBody().write("{\"success\":true,".getBytes(StandardCharsets.UTF_8));
@@ -1267,10 +1271,12 @@ class D1HttpTest {
         exchange.close();
     }
 
+    @NotNull
     private Connection connect() throws SQLException {
         return new D1Driver().connect("jdbc:dbeaver:d1://test-database", connectionProperties());
     }
 
+    @NotNull
     private Properties connectionProperties() {
         Properties properties = new Properties();
         properties.setProperty("accountId", "test-account");
@@ -1279,7 +1285,8 @@ class D1HttpTest {
         return properties;
     }
 
-    private Response defaultApiResponse(ApiRequest apiRequest) {
+    @NotNull
+    private Response defaultApiResponse(@NotNull ApiRequest apiRequest) {
         if (apiRequest.path().endsWith("/test-database")) {
             return database("test-database", "test-database");
         }
@@ -1287,15 +1294,17 @@ class D1HttpTest {
             "{\"uuid\":\"test-database\",\"name\":\"test-database\",\"version\":\"production\"}");
     }
 
-    private static boolean isConnectivityQuery(JsonObject body) {
+    private static boolean isConnectivityQuery(@NotNull JsonObject body) {
         return body.has("sql") && "SELECT 1 AS connectivity_test".equals(body.get("sql").getAsString());
     }
 
+    @NotNull
     private static Response connectivityResponse() {
         return raw(new String[] {"connectivity_test"}, "[1]");
     }
 
-    private static Response raw(String[] columns, String row) {
+    @NotNull
+    private static Response raw(@NotNull String[] columns, @NotNull String row) {
         StringBuilder names = new StringBuilder();
         for (String column : columns) {
             if (names.length() > 0) {
@@ -1307,26 +1316,29 @@ class D1HttpTest {
             "\"results\":{\"columns\":[" + names + "],\"rows\":[" + row + "]}}]}");
     }
 
-    private static Response json(String body) {
+    @NotNull
+    private static Response json(@NotNull String body) {
         return new Response(200, body);
     }
 
-    private static Response databaseList(int page, int totalPages, String database) {
+    @NotNull
+    private static Response databaseList(int page, int totalPages, @NotNull String database) {
         return json("{\"success\":true,\"result\":[" + database + "],\"result_info\":{" +
             "\"page\":" + page + ",\"per_page\":1,\"count\":1,\"total_count\":" + totalPages + "}}");
     }
 
-    private static Response database(String id, String name) {
+    @NotNull
+    private static Response database(@NotNull String id, @NotNull String name) {
         return json("{\"success\":true,\"result\":{" +
             "\"uuid\":\"" + id + "\",\"name\":\"" + name + "\",\"version\":\"production\"}}");
     }
 
-    private record Response(int status, String body, Map<String, String> headers) {
-        private Response(int status, String body) {
+    private record Response(int status, @NotNull String body, @NotNull Map<String, String> headers) {
+        private Response(int status, @NotNull String body) {
             this(status, body, Map.of());
         }
     }
 
-    private record ApiRequest(String method, String path, String query, JsonObject body) {
+    private record ApiRequest(@NotNull String method, @NotNull String path, @Nullable String query, @NotNull JsonObject body) {
     }
 }

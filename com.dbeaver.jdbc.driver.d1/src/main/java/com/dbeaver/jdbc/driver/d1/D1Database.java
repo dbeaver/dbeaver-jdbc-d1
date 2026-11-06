@@ -16,14 +16,17 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 public record D1Database(
-    String id,
-    String name,
-    String createdAt,
-    String jurisdiction,
-    String version,
-    Long fileSize,
-    String runningInRegion,
-    D1ReadReplicationMode readReplicationMode
+    @NotNull String id,
+    @NotNull String name,
+    @Nullable String createdAt,
+    @Nullable String jurisdiction,
+    @Nullable String version,
+    @Nullable Long fileSize,
+    @Nullable String runningInRegion,
+    @Nullable D1ReadReplicationMode readReplicationMode
 ) {
 }

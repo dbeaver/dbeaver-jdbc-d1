@@ -16,6 +16,9 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -67,7 +70,7 @@ final class D1Config {
     final Duration retryMaxDelay;
     final int bodyLimit;
 
-    private D1Config(String databaseId, Properties properties) throws SQLException {
+    private D1Config(@NotNull String databaseId, @NotNull Properties properties) throws SQLException {
         this.databaseId = requireIdentifier("database ID", databaseId);
         this.accountId = requireIdentifier(
             "account ID",
@@ -92,16 +95,19 @@ final class D1Config {
         this.bodyLimit = intProperty(properties, PROP_MAX_RESPONSE_BYTES, DEFAULT_BODY_LIMIT, 1);
     }
 
-    static D1Config parse(String url, Properties supplied) throws SQLException {
+    @NotNull
+    static D1Config parse(@NotNull String url, @Nullable Properties supplied) throws SQLException {
         ParsedUrl parsed = parseUrl(url, supplied);
         return new D1Config(parsed.databaseId(), parsed.properties());
     }
 
-    static Properties resolveProperties(String url, Properties supplied) throws SQLException {
+    @NotNull
+    static Properties resolveProperties(@NotNull String url, @Nullable Properties supplied) throws SQLException {
         return parseUrl(url, supplied).properties();
     }
 
-    private static ParsedUrl parseUrl(String url, Properties supplied) throws SQLException {
+    @NotNull
+    private static ParsedUrl parseUrl(@NotNull String url, @Nullable Properties supplied) throws SQLException {
         if (!url.startsWith(D1Driver.URL_PREFIX)) {
             throw new SQLException("Invalid Cloudflare D1 JDBC URL: " + url);
         }
@@ -123,19 +129,22 @@ final class D1Config {
         }
     }
 
+    @NotNull
     URI databasesEndpoint() {
         return URI.create(stripTrailingSlash(apiUrl.toString()) + "/accounts/" + accountId + "/d1/database");
     }
 
-    URI databaseEndpoint(String id) throws SQLException {
+    @NotNull
+    URI databaseEndpoint(@NotNull String id) throws SQLException {
         return URI.create(databasesEndpoint() + "/" + requireIdentifier("database ID", id));
     }
 
-    URI rawEndpoint(String id) throws SQLException {
+    @NotNull
+    URI rawEndpoint(@NotNull String id) throws SQLException {
         return URI.create(databaseEndpoint(id) + "/raw");
     }
 
-    private static void parseQuery(String query, Properties properties) throws SQLException {
+    private static void parseQuery(@Nullable String query, @NotNull Properties properties) throws SQLException {
         if (query == null || query.isEmpty()) {
             return;
         }
@@ -153,7 +162,8 @@ final class D1Config {
         }
     }
 
-    private static URI apiUrl(String value) throws SQLException {
+    @NotNull
+    private static URI apiUrl(@NotNull String value) throws SQLException {
         try {
             URI uri = URI.create(value);
             if (!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme())) ||
@@ -174,7 +184,8 @@ final class D1Config {
         }
     }
 
-    private static String requireIdentifier(String name, String value) throws SQLException {
+    @NotNull
+    private static String requireIdentifier(@NotNull String name, @Nullable String value) throws SQLException {
         String required = requireValue(name, value);
         if (!IDENTIFIER.matcher(required).matches()) {
             throw new SQLException("Invalid Cloudflare D1 " + name);
@@ -182,28 +193,32 @@ final class D1Config {
         return required;
     }
 
-    private static String requireValue(String name, String value) throws SQLException {
+    @NotNull
+    private static String requireValue(@NotNull String name, @Nullable String value) throws SQLException {
         if (value == null || value.isBlank()) {
             throw new SQLException("Cloudflare D1 " + name + " is required");
         }
         return value;
     }
 
-    private static String firstNonBlank(String first, String second) {
+    @Nullable
+    private static String firstNonBlank(@Nullable String first, @Nullable String second) {
         return first != null && !first.isBlank() ? first : second;
     }
 
+    @NotNull
     private static Duration durationProperty(
-        Properties properties,
-        String name,
+        @NotNull Properties properties,
+        @NotNull String name,
         int defaultMillis
     ) throws SQLException {
         return durationProperty(properties, name, defaultMillis, 1);
     }
 
+    @NotNull
     private static Duration durationProperty(
-        Properties properties,
-        String name,
+        @NotNull Properties properties,
+        @NotNull String name,
         int defaultMillis,
         int minimum
     ) throws SQLException {
@@ -211,8 +226,8 @@ final class D1Config {
     }
 
     private static int intProperty(
-        Properties properties,
-        String name,
+        @NotNull Properties properties,
+        @NotNull String name,
         int defaultValue,
         int minimum
     ) throws SQLException {
@@ -231,7 +246,8 @@ final class D1Config {
         }
     }
 
-    private static Set<String> databaseIds(String value) throws SQLException {
+    @NotNull
+    private static Set<String> databaseIds(@Nullable String value) throws SQLException {
         if (value == null || value.isBlank()) {
             return Set.of();
         }
@@ -242,14 +258,16 @@ final class D1Config {
         return Collections.unmodifiableSet(ids);
     }
 
-    private static String decode(String value) {
+    @NotNull
+    private static String decode(@NotNull String value) {
         return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
-    private static String stripTrailingSlash(String value) {
+    @NotNull
+    private static String stripTrailingSlash(@NotNull String value) {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
-    private record ParsedUrl(String databaseId, Properties properties) {
+    private record ParsedUrl(@NotNull String databaseId, @NotNull Properties properties) {
     }
 }

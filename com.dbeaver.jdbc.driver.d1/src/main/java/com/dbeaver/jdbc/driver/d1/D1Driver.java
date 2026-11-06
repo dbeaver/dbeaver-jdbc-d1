@@ -16,6 +16,9 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -50,7 +53,8 @@ public final class D1Driver implements Driver {
      * @return the account's D1 databases
      * @throws SQLException if Cloudflare rejects the request or returns an invalid response
      */
-    public static List<D1Database> discoverDatabases(Properties properties) throws SQLException {
+    @NotNull
+    public static List<D1Database> discoverDatabases(@NotNull Properties properties) throws SQLException {
         D1Connection connection = new D1Connection(
             URL_PREFIX + "discovery", D1Config.parse(URL_PREFIX + "discovery", properties));
         try {
@@ -61,7 +65,8 @@ public final class D1Driver implements Driver {
     }
 
     @Override
-    public Connection connect(String url, Properties info) throws SQLException {
+    @Nullable
+    public Connection connect(@Nullable String url, @Nullable Properties info) throws SQLException {
         if (!acceptsURL(url)) {
             return null;
         }
@@ -76,12 +81,13 @@ public final class D1Driver implements Driver {
     }
 
     @Override
-    public boolean acceptsURL(String url) {
+    public boolean acceptsURL(@Nullable String url) {
         return url != null && url.regionMatches(true, 0, URL_PREFIX, 0, URL_PREFIX.length());
     }
 
     @Override
-    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+    @NotNull
+    public DriverPropertyInfo[] getPropertyInfo(@Nullable String url, @Nullable Properties info) throws SQLException {
         Properties values = new Properties();
         if (info != null) {
             values.putAll(info);
@@ -125,10 +131,11 @@ public final class D1Driver implements Driver {
         };
     }
 
+    @NotNull
     private static DriverPropertyInfo property(
-        String name,
-        String value,
-        String description,
+        @NotNull String name,
+        @Nullable String value,
+        @NotNull String description,
         boolean required
     ) {
         DriverPropertyInfo property = new DriverPropertyInfo(name, value);
@@ -137,7 +144,8 @@ public final class D1Driver implements Driver {
         return property;
     }
 
-    private static String first(Properties properties, String first, String second) {
+    @Nullable
+    private static String first(@NotNull Properties properties, @NotNull String first, @NotNull String second) {
         String value = properties.getProperty(first);
         return value == null ? properties.getProperty(second) : value;
     }
@@ -158,6 +166,7 @@ public final class D1Driver implements Driver {
     }
 
     @Override
+    @NotNull
     public Logger getParentLogger() {
         return Logger.getLogger("com.dbeaver.jdbc.driver.d1");
     }

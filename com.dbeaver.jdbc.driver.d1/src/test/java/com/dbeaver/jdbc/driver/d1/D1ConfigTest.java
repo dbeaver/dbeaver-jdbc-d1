@@ -16,6 +16,7 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -153,6 +154,7 @@ class D1ConfigTest {
         assertEquals("2", property(properties, "maxRetries").value);
     }
 
+    @NotNull
     private static Properties properties() {
         Properties properties = new Properties();
         properties.setProperty("accountId", "account");
@@ -160,7 +162,8 @@ class D1ConfigTest {
         return properties;
     }
 
-    private static DriverPropertyInfo property(DriverPropertyInfo[] properties, String name) {
+    @NotNull
+    private static DriverPropertyInfo property(@NotNull DriverPropertyInfo[] properties, @NotNull String name) {
         for (DriverPropertyInfo property : properties) {
             if (name.equals(property.name)) {
                 return property;

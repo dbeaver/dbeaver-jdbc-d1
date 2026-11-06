@@ -16,6 +16,8 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +25,7 @@ final class D1SqlParameters {
     private D1SqlParameters() {
     }
 
-    static int count(String sql) {
+    static int count(@NotNull String sql) {
         int maximumIndex = 0;
         Map<String, Integer> named = new HashMap<>();
         for (int index = 0; index < sql.length();) {
@@ -70,7 +72,7 @@ final class D1SqlParameters {
         return maximumIndex;
     }
 
-    private static int skipQuoted(String sql, int start, char opening, char closing) {
+    private static int skipQuoted(@NotNull String sql, int start, char opening, char closing) {
         int index = start + 1;
         while (index < sql.length()) {
             if (sql.charAt(index) == closing) {
@@ -85,14 +87,14 @@ final class D1SqlParameters {
         return index;
     }
 
-    private static int skipLineComment(String sql, int index) {
+    private static int skipLineComment(@NotNull String sql, int index) {
         while (index < sql.length() && sql.charAt(index) != '\n' && sql.charAt(index) != '\r') {
             index++;
         }
         return index;
     }
 
-    private static int skipBlockComment(String sql, int index) {
+    private static int skipBlockComment(@NotNull String sql, int index) {
         while (index + 1 < sql.length()) {
             if (sql.charAt(index) == '*' && sql.charAt(index + 1) == '/') {
                 return index + 2;
@@ -102,7 +104,7 @@ final class D1SqlParameters {
         return sql.length();
     }
 
-    private static int namedParameterEnd(String sql, int index, boolean tclStyle) {
+    private static int namedParameterEnd(@NotNull String sql, int index, boolean tclStyle) {
         int start = index;
         boolean hasName = false;
         while (index < sql.length()) {
@@ -129,7 +131,7 @@ final class D1SqlParameters {
         return hasName ? index : start;
     }
 
-    private static int skipIdentifier(String sql, int index) {
+    private static int skipIdentifier(@NotNull String sql, int index) {
         while (index < sql.length() && isIdentifierPart(sql.charAt(index))) {
             index++;
         }
@@ -144,7 +146,7 @@ final class D1SqlParameters {
         return isIdentifierStart(value) || Character.isDigit(value) || value == '$';
     }
 
-    private static boolean hasNext(String sql, int index, char expected) {
+    private static boolean hasNext(@NotNull String sql, int index, char expected) {
         return index + 1 < sql.length() && sql.charAt(index + 1) == expected;
     }
 }

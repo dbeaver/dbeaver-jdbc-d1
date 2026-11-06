@@ -17,6 +17,9 @@
 package com.dbeaver.jdbc.driver.d1;
 
 import com.dbeaver.jdbc.model.AbstractJdbcDatabaseMetaData;
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,26 +37,30 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         "WHEN upper(p.type) LIKE '%REAL%' OR upper(p.type) LIKE '%FLOA%' OR upper(p.type) LIKE '%DOUB%' THEN " +
         Types.DOUBLE + " ELSE " + Types.NUMERIC + " END";
 
-    D1DatabaseMetaData(D1Connection connection, String url) {
+    D1DatabaseMetaData(@NotNull D1Connection connection, @NotNull String url) {
         super(connection, url);
     }
 
     @Override
+    @NotNull
     public String getDatabaseProductName() {
         return "Cloudflare D1";
     }
 
     @Override
+    @NotNull
     public String getDatabaseProductVersion() {
         return connection.databaseProductVersion();
     }
 
     @Override
+    @NotNull
     public String getDriverName() {
         return D1Driver.DRIVER_NAME;
     }
 
     @Override
+    @NotNull
     public String getDriverVersion() {
         return D1Driver.DRIVER_VERSION_MAJOR + "." + D1Driver.DRIVER_VERSION_MINOR;
     }
@@ -79,6 +86,7 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public String getUserName() {
         return connection.config().accountId;
     }
@@ -294,16 +302,19 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public String getSchemaTerm() {
         return "schema";
     }
 
     @Override
+    @NotNull
     public String getCatalogTerm() {
         return "database";
     }
 
     @Override
+    @NotNull
     public ResultSet getCatalogs() throws SQLException {
         List<D1Database> databases = connection.catalogDatabases();
         Object[][] rows = new Object[databases.size()][];
@@ -314,12 +325,14 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getSchemas() throws SQLException {
         return getSchemas(null, null);
     }
 
     @Override
-    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+    @NotNull
+    public ResultSet getSchemas(@Nullable String catalog, @Nullable String schemaPattern) throws SQLException {
         D1Database database = database(catalog);
         StringBuilder sql = new StringBuilder(
             "SELECT 'main' AS TABLE_SCHEM, ? AS TABLE_CATALOG WHERE TRUE");
@@ -329,16 +342,18 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getTableTypes() throws SQLException {
         return query("SELECT 'TABLE' AS TABLE_TYPE UNION ALL SELECT 'VIEW' AS TABLE_TYPE");
     }
 
     @Override
+    @NotNull
     public ResultSet getTables(
-        String catalog,
-        String schemaPattern,
-        String tableNamePattern,
-        String[] types
+        @Nullable String catalog,
+        @Nullable String schemaPattern,
+        @Nullable String tableNamePattern,
+        @Nullable String[] types
     ) throws SQLException {
         D1Database database = database(catalog);
         StringBuilder sql = new StringBuilder(
@@ -371,11 +386,12 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getColumns(
-        String catalog,
-        String schemaPattern,
-        String tableNamePattern,
-        String columnNamePattern
+        @Nullable String catalog,
+        @Nullable String schemaPattern,
+        @Nullable String tableNamePattern,
+        @Nullable String columnNamePattern
     ) throws SQLException {
         D1Database database = database(catalog);
         StringBuilder sql = new StringBuilder(
@@ -402,10 +418,11 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getPrimaryKeys(
-        String catalog,
-        String schema,
-        String table
+        @Nullable String catalog,
+        @Nullable String schema,
+        @NotNull String table
     ) throws SQLException {
         D1Database database = database(catalog);
         if (unsupportedSchema(schema)) {
@@ -418,10 +435,11 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getImportedKeys(
-        String catalog,
-        String schema,
-        String table
+        @Nullable String catalog,
+        @Nullable String schema,
+        @NotNull String table
     ) throws SQLException {
         D1Database database = database(catalog);
         if (unsupportedSchema(schema)) {
@@ -435,10 +453,11 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getExportedKeys(
-        String catalog,
-        String schema,
-        String table
+        @Nullable String catalog,
+        @Nullable String schema,
+        @NotNull String table
     ) throws SQLException {
         D1Database database = database(catalog);
         if (unsupportedSchema(schema)) {
@@ -458,13 +477,14 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getCrossReference(
-        String parentCatalog,
-        String parentSchema,
-        String parentTable,
-        String foreignCatalog,
-        String foreignSchema,
-        String foreignTable
+        @Nullable String parentCatalog,
+        @Nullable String parentSchema,
+        @NotNull String parentTable,
+        @Nullable String foreignCatalog,
+        @Nullable String foreignSchema,
+        @NotNull String foreignTable
     ) throws SQLException {
         D1Database parentDatabase = database(parentCatalog);
         D1Database foreignDatabase = database(foreignCatalog);
@@ -492,10 +512,11 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getIndexInfo(
-        String catalog,
-        String schema,
-        String table,
+        @Nullable String catalog,
+        @Nullable String schema,
+        @NotNull String table,
         boolean unique,
         boolean approximate
     ) throws SQLException {
@@ -513,6 +534,7 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     @Override
+    @NotNull
     public ResultSet getTypeInfo() throws SQLException {
         return query("SELECT 'INTEGER' AS TYPE_NAME, " + Types.INTEGER + " AS DATA_TYPE, 19 AS PRECISION, " +
             "NULL AS LITERAL_PREFIX, NULL AS LITERAL_SUFFIX, NULL AS CREATE_PARAMS, 1 AS NULLABLE, FALSE AS CASE_SENSITIVE, " +
@@ -529,22 +551,25 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
             "'NUMERIC', 0, 0, NULL, NULL, 10");
     }
 
-    private ResultSet emptyForeignKeys(D1Database database) throws SQLException {
+    @NotNull
+    private ResultSet emptyForeignKeys(@NotNull D1Database database) throws SQLException {
         return query(foreignKeySelect("NULL", "NULL", "NULL", "''") + " WHERE FALSE", database);
     }
 
-    private ResultSet emptyIndexes(D1Database database) throws SQLException {
+    @NotNull
+    private ResultSet emptyIndexes(@NotNull D1Database database) throws SQLException {
         return query("SELECT NULL AS TABLE_CAT, 'main' AS TABLE_SCHEM, NULL AS TABLE_NAME, TRUE AS NON_UNIQUE, " +
             "NULL AS INDEX_QUALIFIER, NULL AS INDEX_NAME, " + DatabaseMetaData.tableIndexOther + " AS TYPE, " +
             "NULL AS ORDINAL_POSITION, NULL AS COLUMN_NAME, NULL AS ASC_OR_DESC, 0 AS CARDINALITY, 0 AS PAGES, " +
             "NULL AS FILTER_CONDITION WHERE FALSE", database);
     }
 
+    @NotNull
     private static String foreignKeySelect(
-        String primaryCatalog,
-        String foreignCatalog,
-        String foreignTable,
-        String pragmaTable
+        @NotNull String primaryCatalog,
+        @NotNull String foreignCatalog,
+        @NotNull String foreignTable,
+        @NotNull String pragmaTable
     ) {
         return "SELECT " + primaryCatalog + " AS PKTABLE_CAT, 'main' AS PKTABLE_SCHEM, " +
             "f.\"table\" AS PKTABLE_NAME, coalesce(f.\"to\", pk.name) AS PKCOLUMN_NAME, " + foreignCatalog +
@@ -556,7 +581,8 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
             "LEFT JOIN pragma_table_info(f.\"table\") AS pk ON f.\"to\" IS NULL AND pk.pk = f.seq + 1";
     }
 
-    private static String rule(String field) {
+    @NotNull
+    private static String rule(@NotNull String field) {
         return "CASE upper(" + field + ") WHEN 'CASCADE' THEN " + DatabaseMetaData.importedKeyCascade +
             " WHEN 'SET NULL' THEN " + DatabaseMetaData.importedKeySetNull +
             " WHEN 'SET DEFAULT' THEN " + DatabaseMetaData.importedKeySetDefault +
@@ -564,7 +590,8 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
             " ELSE " + DatabaseMetaData.importedKeyNoAction + " END";
     }
 
-    private ResultSet query(String sql, List<?> args) throws SQLException {
+    @NotNull
+    private ResultSet query(@NotNull String sql, @NotNull List<?> args) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(sql);
         try {
             statement.closeOnCompletion();
@@ -578,10 +605,11 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         }
     }
 
+    @NotNull
     private ResultSet query(
-        String sql,
-        List<?> args,
-        D1Database database
+        @NotNull String sql,
+        @NotNull List<?> args,
+        @NotNull D1Database database
     ) throws SQLException {
         PreparedStatement statement = new D1Statement(connection, sql, Statement.NO_GENERATED_KEYS, database);
         try {
@@ -596,7 +624,8 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         }
     }
 
-    private ResultSet query(String sql) throws SQLException {
+    @NotNull
+    private ResultSet query(@NotNull String sql) throws SQLException {
         Statement statement = connection.createStatement();
         try {
             statement.closeOnCompletion();
@@ -607,7 +636,8 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         }
     }
 
-    private ResultSet query(String sql, D1Database database) throws SQLException {
+    @NotNull
+    private ResultSet query(@NotNull String sql, @NotNull D1Database database) throws SQLException {
         Statement statement = new D1Statement(connection, null, Statement.NO_GENERATED_KEYS, database);
         try {
             statement.closeOnCompletion();
@@ -619,10 +649,10 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
     }
 
     private static void condition(
-        StringBuilder sql,
-        List<Object> args,
-        String expression,
-        String value,
+        @NotNull StringBuilder sql,
+        @NotNull List<Object> args,
+        @NotNull String expression,
+        @Nullable String value,
         boolean pattern
     ) {
         if (value == null) {
@@ -632,11 +662,12 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         args.add(value);
     }
 
-    private static boolean unsupportedSchema(String schema) {
+    private static boolean unsupportedSchema(@Nullable String schema) {
         return schema != null && !schema.isEmpty() && !"main".equalsIgnoreCase(schema);
     }
 
-    private D1Database database(String catalog) throws SQLException {
+    @NotNull
+    private D1Database database(@Nullable String catalog) throws SQLException {
         if (catalog != null && !catalog.isEmpty()) {
             return connection.resolveDatabase(catalog);
         }
@@ -647,7 +678,7 @@ public final class D1DatabaseMetaData extends AbstractJdbcDatabaseMetaData<D1Con
         return connection.resolveDatabase(current);
     }
 
-    private static void appendPlaceholders(StringBuilder sql, int count) {
+    private static void appendPlaceholders(@NotNull StringBuilder sql, int count) {
         for (int i = 0; i < count; i++) {
             if (i > 0) {
                 sql.append(',');

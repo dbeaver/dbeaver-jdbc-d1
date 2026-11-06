@@ -16,6 +16,8 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -63,12 +65,14 @@ final class D1ParameterMetaData implements ParameterMetaData {
     }
 
     @Override
+    @NotNull
     public String getParameterTypeName(int parameter) throws SQLException {
         checkParameter(parameter);
         return "";
     }
 
     @Override
+    @NotNull
     public String getParameterClassName(int parameter) throws SQLException {
         checkParameter(parameter);
         return Object.class.getName();
@@ -81,7 +85,8 @@ final class D1ParameterMetaData implements ParameterMetaData {
     }
 
     @Override
-    public <T> T unwrap(Class<T> iface) throws SQLException {
+    @NotNull
+    public <T> T unwrap(@NotNull Class<T> iface) throws SQLException {
         if (iface.isInstance(this)) {
             return iface.cast(this);
         }
@@ -89,7 +94,7 @@ final class D1ParameterMetaData implements ParameterMetaData {
     }
 
     @Override
-    public boolean isWrapperFor(Class<?> iface) {
+    public boolean isWrapperFor(@NotNull Class<?> iface) {
         return iface.isInstance(this);
     }
 

@@ -16,6 +16,9 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 final class D1SqlCatalogs {
     private D1SqlCatalogs() {
     }
@@ -24,7 +27,8 @@ final class D1SqlCatalogs {
      * Removes the active JDBC catalog from catalog.schema.object references. D1 selects the database in the REST URL,
      * while its SQLite SQL dialect accepts only schema.object references.
      */
-    static String normalize(String sql, String catalogName, String catalogId) {
+    @NotNull
+    static String normalize(@NotNull String sql, @NotNull String catalogName, @NotNull String catalogId) {
         StringBuilder normalized = null;
         int copiedThrough = 0;
         for (int index = 0; index < sql.length();) {
@@ -81,11 +85,12 @@ final class D1SqlCatalogs {
         return normalized.append(sql, copiedThrough, sql.length()).toString();
     }
 
-    private static boolean isCatalog(String value, String name, String id) {
+    private static boolean isCatalog(@NotNull String value, @NotNull String name, @NotNull String id) {
         return value.equalsIgnoreCase(name) || value.equalsIgnoreCase(id);
     }
 
-    private static Identifier identifier(String sql, int start) {
+    @Nullable
+    private static Identifier identifier(@NotNull String sql, int start) {
         if (start >= sql.length()) {
             return null;
         }
@@ -117,7 +122,7 @@ final class D1SqlCatalogs {
         return new Identifier(sql.substring(start, end), end);
     }
 
-    private static int skipQuoted(String sql, int start, char quote) {
+    private static int skipQuoted(@NotNull String sql, int start, char quote) {
         int index = start + 1;
         while (index < sql.length()) {
             if (sql.charAt(index) == quote) {
@@ -132,14 +137,14 @@ final class D1SqlCatalogs {
         return index;
     }
 
-    private static int skipLineComment(String sql, int index) {
+    private static int skipLineComment(@NotNull String sql, int index) {
         while (index < sql.length() && sql.charAt(index) != '\n' && sql.charAt(index) != '\r') {
             index++;
         }
         return index;
     }
 
-    private static int skipBlockComment(String sql, int index) {
+    private static int skipBlockComment(@NotNull String sql, int index) {
         while (index + 1 < sql.length()) {
             if (sql.charAt(index) == '*' && sql.charAt(index + 1) == '/') {
                 return index + 2;
@@ -149,7 +154,7 @@ final class D1SqlCatalogs {
         return sql.length();
     }
 
-    private static int skipWhitespace(String sql, int index) {
+    private static int skipWhitespace(@NotNull String sql, int index) {
         while (index < sql.length() && Character.isWhitespace(sql.charAt(index))) {
             index++;
         }
@@ -164,10 +169,10 @@ final class D1SqlCatalogs {
         return Character.isLetterOrDigit(value) || value == '_' || value == '$';
     }
 
-    private static boolean hasNext(String sql, int index, char expected) {
+    private static boolean hasNext(@NotNull String sql, int index, char expected) {
         return index + 1 < sql.length() && sql.charAt(index + 1) == expected;
     }
 
-    private record Identifier(String value, int end) {
+    private record Identifier(@NotNull String value, int end) {
     }
 }

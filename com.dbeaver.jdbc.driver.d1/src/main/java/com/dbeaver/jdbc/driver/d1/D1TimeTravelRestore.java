@@ -16,9 +16,12 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 public record D1TimeTravelRestore(
-    String bookmark,
-    String previousBookmark,
-    String message
+    @NotNull String bookmark,
+    @Nullable String previousBookmark,
+    @Nullable String message
 ) {
 }

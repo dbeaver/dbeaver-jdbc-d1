@@ -16,14 +16,16 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.Nullable;
+
 public record D1RequestDiagnostics(
     int statusCode,
     long elapsedMillis,
     int attempts,
-    String cfRay,
-    String rateLimit,
-    String rateLimitPolicy,
-    String retryAfter
+    @Nullable String cfRay,
+    @Nullable String rateLimit,
+    @Nullable String rateLimitPolicy,
+    @Nullable String retryAfter
 ) {
     public static final D1RequestDiagnostics EMPTY = new D1RequestDiagnostics(0, 0, 0, null, null, null, null);
 }

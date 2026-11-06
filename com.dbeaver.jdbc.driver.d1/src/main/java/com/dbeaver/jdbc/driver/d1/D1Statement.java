@@ -18,6 +18,9 @@ package com.dbeaver.jdbc.driver.d1;
 
 import com.dbeaver.jdbc.model.AbstractJdbcStatement;
 import com.google.gson.*;
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.math.BigDecimal;
 import java.net.http.HttpResponse;
 import java.sql.*;
@@ -52,18 +55,18 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     private D1RequestDiagnostics diagnostics = D1RequestDiagnostics.EMPTY;
 
     D1Statement(
-        D1Connection connection,
-        String preparedSql,
+        @NotNull D1Connection connection,
+        @Nullable String preparedSql,
         int preparedGeneratedKeys
     ) throws SQLException {
         this(connection, preparedSql, preparedGeneratedKeys, connection.statementDatabase());
     }
 
     D1Statement(
-        D1Connection connection,
-        String preparedSql,
+        @NotNull D1Connection connection,
+        @Nullable String preparedSql,
         int preparedGeneratedKeys,
-        D1Database targetDatabase
+        @NotNull D1Database targetDatabase
     ) throws SQLException {
         super(connection);
         this.preparedSql = preparedSql;
@@ -81,9 +84,9 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
 
     @Override
     protected boolean execute(
-        String sql,
-        int[] indexes,
-        String[] names,
+        @NotNull String sql,
+        @Nullable int[] indexes,
+        @Nullable String[] names,
         int generatedKeys
     ) throws SQLException {
         ensureNotPrepared();
@@ -92,7 +95,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return executeInternal(new Query(normalize(sql), List.of()), keys);
     }
 
-    private boolean executeInternal(Query query, int generatedKeys) throws SQLException {
+    private boolean executeInternal(@NotNull Query query, int generatedKeys) throws SQLException {
         checkOpen();
         clearResults();
         JsonObject request = query.toJson();
@@ -106,7 +109,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return resultSet != null;
     }
 
-    private D1Execution executeRequest(JsonObject request) throws SQLException {
+    @NotNull
+    private D1Execution executeRequest(@NotNull JsonObject request) throws SQLException {
         Duration timeout = switch (queryTimeout) {
             case -1 -> connection.config().queryTimeout;
             case 0 -> null;
@@ -153,7 +157,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
-    public ResultSet executeQuery(String sql) throws SQLException {
+    @NotNull
+    public ResultSet executeQuery(@NotNull String sql) throws SQLException {
         if (!execute(sql)) {
             throw new SQLException("Statement did not produce a result set");
         }
@@ -161,6 +166,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @NotNull
     public ResultSet executeQuery() throws SQLException {
         if (!execute()) {
             throw new SQLException("Statement did not produce a result set");
@@ -170,9 +176,9 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
 
     @Override
     protected int executeUpdate(
-        String sql,
-        int[] indexes,
-        String[] names,
+        @NotNull String sql,
+        @Nullable int[] indexes,
+        @Nullable String[] names,
         int generatedKeys
     ) throws SQLException {
         if (execute(sql, indexes, names, generatedKeys)) {
@@ -198,7 +204,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
-    public void addBatch(String sql) throws SQLException {
+    public void addBatch(@NotNull String sql) throws SQLException {
         checkOpen();
         ensureNotPrepared();
         batch.add(new Query(normalize(sql), List.of()));
@@ -217,6 +223,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @NotNull
     public int[] executeBatch() throws SQLException {
         checkOpen();
         if (batch.isEmpty()) {
@@ -258,6 +265,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @NotNull
     public long[] executeLargeBatch() throws SQLException {
         int[] counts = executeBatch();
         long[] large = new long[counts.length];
@@ -268,6 +276,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @Nullable
     public ResultSet getResultSet() throws SQLException {
         checkOpen();
         return resultSet;
@@ -286,11 +295,13 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @NotNull
     public D1StatementMetrics getD1Metrics() {
         return metrics;
     }
 
     @Override
+    @NotNull
     public D1RequestDiagnostics getD1RequestDiagnostics() {
         return diagnostics;
     }
@@ -319,6 +330,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @NotNull
     public ResultSet getGeneratedKeys() throws SQLException {
         checkOpen();
         if (generatedKeysResultSet == null) {
@@ -332,12 +344,14 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @Nullable
     public ResultSetMetaData getMetaData() throws SQLException {
         checkOpen();
         return resultSet == null ? null : resultSet.getMetaData();
     }
 
     @Override
+    @NotNull
     public ParameterMetaData getParameterMetaData() throws SQLException {
         checkOpen();
         ensurePrepared();
@@ -391,6 +405,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
+    @Nullable
     public SQLWarning getWarnings() throws SQLException {
         checkOpen();
         return warnings;
@@ -405,7 +420,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     @Override
     public void setObject(
         int parameterIndex,
-        Object value,
+        @Nullable Object value,
         int targetSqlType,
         int scaleOrLength
     ) throws SQLException {
@@ -453,32 +468,32 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     @Override
-    public void setBigDecimal(int index, BigDecimal value) throws SQLException {
+    public void setBigDecimal(int index, @Nullable BigDecimal value) throws SQLException {
         setParameter(index, toJson(value));
     }
 
     @Override
-    public void setString(int index, String value) throws SQLException {
+    public void setString(int index, @Nullable String value) throws SQLException {
         setParameter(index, toJson(value));
     }
 
     @Override
-    public void setBytes(int index, byte[] value) throws SQLException {
+    public void setBytes(int index, @Nullable byte[] value) throws SQLException {
         setParameter(index, toJson(value));
     }
 
     @Override
-    public void setDate(int index, Date value, Calendar calendar) throws SQLException {
+    public void setDate(int index, @Nullable Date value, @Nullable Calendar calendar) throws SQLException {
         setParameter(index, toJson(value));
     }
 
     @Override
-    public void setTime(int index, Time value, Calendar calendar) throws SQLException {
+    public void setTime(int index, @Nullable Time value, @Nullable Calendar calendar) throws SQLException {
         setParameter(index, toJson(value));
     }
 
     @Override
-    public void setTimestamp(int index, Timestamp value, Calendar calendar) throws SQLException {
+    public void setTimestamp(int index, @Nullable Timestamp value, @Nullable Calendar calendar) throws SQLException {
         setParameter(index, toJson(value));
     }
 
@@ -487,7 +502,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         parameters.clear();
     }
 
-    private void setParameter(int index, JsonElement value) throws SQLException {
+    private void setParameter(int index, @NotNull JsonElement value) throws SQLException {
         checkOpen();
         ensurePrepared();
         if (index < 1 || index > parameterCount) {
@@ -499,6 +514,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         parameters.set(index - 1, value);
     }
 
+    @NotNull
     private List<JsonElement> checkedParameters() throws SQLException {
         if (parameters.size() < parameterCount) {
             throw new SQLException("Missing bound parameter at index " + (parameters.size() + 1), "07001");
@@ -510,7 +526,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return List.copyOf(parameters);
     }
 
-    private static JsonElement toJson(Object value) throws SQLException {
+    @NotNull
+    private static JsonElement toJson(@Nullable Object value) throws SQLException {
         if (value == null) {
             return JsonNull.INSTANCE;
         }
@@ -537,7 +554,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         throw new SQLFeatureNotSupportedException("Unsupported D1 parameter type: " + value.getClass().getName());
     }
 
-    private D1ResultSet createResultSet(D1Response response) {
+    @NotNull
+    private D1ResultSet createResultSet(@NotNull D1Response response) {
         Object[][] allRows = response.rows();
         Object[][] rows = allRows;
         if (maxRows > 0 && rows.length > maxRows) {
@@ -553,21 +571,23 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         );
     }
 
+    @NotNull
     static D1ResultSet createResultSet(
-        D1Statement statement,
-        String[] names,
-        Object[][] rows
+        @Nullable D1Statement statement,
+        @NotNull String[] names,
+        @NotNull Object[][] rows
     ) {
         return createResultSet(statement, names, rows, rows, null, null);
     }
 
+    @NotNull
     private static D1ResultSet createResultSet(
-        D1Statement statement,
-        String[] names,
-        Object[][] rows,
-        Object[][] metadataRows,
-        String catalog,
-        String schema
+        @Nullable D1Statement statement,
+        @NotNull String[] names,
+        @NotNull Object[][] rows,
+        @NotNull Object[][] metadataRows,
+        @Nullable String catalog,
+        @Nullable String schema
     ) {
         D1ResultSetMetaData.Column[] columns = new D1ResultSetMetaData.Column[names.length];
         int[] scales = new int[names.length];
@@ -591,7 +611,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return new D1ResultSet(statement, new D1ResultSetMetaData(statement, columns, scales), rows);
     }
 
-    private static int inferType(Object[][] rows, int index) {
+    private static int inferType(@NotNull Object[][] rows, int index) {
         int type = Types.NULL;
         for (Object[] row : rows) {
             Object value = row[index];
@@ -619,7 +639,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return Types.OTHER;
     }
 
-    private static int scale(Object[][] rows, int index, int type) {
+    private static int scale(@NotNull Object[][] rows, int index, int type) {
         if (type != Types.NUMERIC && type != Types.DECIMAL) {
             return 0;
         }
@@ -632,7 +652,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return scale;
     }
 
-    private static int precision(Object[][] rows, int index, int type, int scale) {
+    private static int precision(@NotNull Object[][] rows, int index, int type, int scale) {
         int precision = switch (type) {
             case Types.BOOLEAN -> 1;
             case Types.INTEGER -> 10;
@@ -657,6 +677,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return precision;
     }
 
+    @NotNull
     private static String typeName(int type) {
         return switch (type) {
             case Types.BOOLEAN -> "BOOLEAN";
@@ -669,7 +690,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         };
     }
 
-    private String normalize(String sql) {
+    @NotNull
+    private String normalize(@NotNull String sql) {
         return connection.nativeSQL(sql, targetDatabase);
     }
 
@@ -693,8 +715,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
     }
 
     private static void validateGeneratedKeys(
-        int[] indexes,
-        String[] names,
+        @Nullable int[] indexes,
+        @Nullable String[] names,
         int generatedKeys
     ) throws SQLException {
         if (generatedKeys != NO_GENERATED_KEYS && generatedKeys != RETURN_GENERATED_KEYS) {
@@ -753,7 +775,7 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         }
     }
 
-    void resultSetClosed(D1ResultSet closedResult) {
+    void resultSetClosed(@NotNull D1ResultSet closedResult) {
         if (closedResult == resultSet) {
             resultSet = null;
         }
@@ -766,7 +788,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         }
     }
 
-    private static List<Long> generatedKeys(List<D1Response> responses) {
+    @NotNull
+    private static List<Long> generatedKeys(@NotNull List<D1Response> responses) {
         List<Long> keys = new ArrayList<>();
         for (D1Response response : responses) {
             if (response.lastRowId() != null) {
@@ -776,7 +799,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return List.copyOf(keys);
     }
 
-    private static D1StatementMetrics aggregateMetrics(List<D1Response> responses) {
+    @NotNull
+    private static D1StatementMetrics aggregateMetrics(@NotNull List<D1Response> responses) {
         long rowsRead = 0;
         long rowsWritten = 0;
         long changes = 0;
@@ -831,7 +855,8 @@ final class D1Statement extends AbstractJdbcStatement<D1Connection> implements D
         return closed;
     }
 
-    private record Query(String sql, List<JsonElement> parameters) {
+    private record Query(@NotNull String sql, @NotNull List<JsonElement> parameters) {
+        @NotNull
         JsonObject toJson() {
             JsonObject query = new JsonObject();
             query.addProperty("sql", sql);

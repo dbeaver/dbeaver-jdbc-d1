@@ -16,17 +16,19 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.Nullable;
+
 public record D1StatementMetrics(
     long rowsRead,
     long rowsWritten,
     long changes,
-    Long lastRowId,
-    String servedByRegion,
-    String servedByColo,
-    Double sqlDurationMillis,
-    Long sizeAfter,
-    Boolean changedDatabase,
-    Boolean servedByPrimary
+    @Nullable Long lastRowId,
+    @Nullable String servedByRegion,
+    @Nullable String servedByColo,
+    @Nullable Double sqlDurationMillis,
+    @Nullable Long sizeAfter,
+    @Nullable Boolean changedDatabase,
+    @Nullable Boolean servedByPrimary
 ) {
     public static final D1StatementMetrics EMPTY = new D1StatementMetrics(
         0,

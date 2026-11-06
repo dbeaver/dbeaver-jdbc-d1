@@ -16,12 +16,15 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+
 import java.sql.SQLWarning;
 import java.util.List;
 
 record D1Execution(
-    List<D1Response> responses,
-    SQLWarning warnings,
-    D1RequestDiagnostics diagnostics
+    @NotNull List<D1Response> responses,
+    @Nullable SQLWarning warnings,
+    @NotNull D1RequestDiagnostics diagnostics
 ) {
 }

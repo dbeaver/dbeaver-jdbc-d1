@@ -16,11 +16,15 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+
 /**
  * D1-specific execution information available through {@link java.sql.Wrapper#unwrap(Class)}.
  */
 public interface D1StatementInfo {
+    @NotNull
     D1StatementMetrics getD1Metrics();
 
+    @NotNull
     D1RequestDiagnostics getD1RequestDiagnostics();
 }

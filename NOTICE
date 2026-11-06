@@ -1,4 +1,4 @@
 DBeaver Cloudflare D1 JDBC Driver
 Copyright 2026 DBeaver Corp
 
-This product includes JDBC base implementations from DBeaver, licensed under the Apache License, Version 2.0.
+This product uses the shared JDBC API and utilities from dbeaver-common, licensed under the Apache License, Version 2.0.

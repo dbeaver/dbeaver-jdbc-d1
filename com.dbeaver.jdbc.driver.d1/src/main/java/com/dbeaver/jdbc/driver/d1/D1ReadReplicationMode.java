@@ -16,16 +16,19 @@
  */
 package com.dbeaver.jdbc.driver.d1;
 
+import org.jkiss.code.NotNull;
+
 public enum D1ReadReplicationMode {
     AUTO("auto"),
     DISABLED("disabled");
 
     private final String apiValue;
 
-    D1ReadReplicationMode(String apiValue) {
+    D1ReadReplicationMode(@NotNull String apiValue) {
         this.apiValue = apiValue;
     }
 
+    @NotNull
     String apiValue() {
         return apiValue;
     }
