@@ -97,6 +97,13 @@ Run the aggregate build and hermetic unit tests from this repository:
 ```
 
 On Windows, use `../dbeaver-common/mvnw.cmd`.
+
+The default build produces a plain driver JAR. To also build the standalone shaded JAR and `target/dist` distribution, run:
+
+```sh
+../dbeaver-common/mvnw -f aggregate/pom.xml package -Pfull-jar
+```
+
 SQLite JDBC is used only by unit tests to validate metadata SQL against an in-memory database; it is not a runtime dependency.
 
 Live Cloudflare tests are tagged `integration` and excluded by default.
